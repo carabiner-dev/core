@@ -1,0 +1,50 @@
+// SPDX-FileCopyrightText: Copyright 2025 Carabiner Systems, Inc
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+package carabiner.core.v1;
+
+import "v1/objects.proto";
+import "google/protobuf/timestamp.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/descriptor.proto";
+
+
+// import "v1/policy.proto";
+
+option go_package = "github.com/carabiner-dev/core/api/v1";
+
+enum EventType {
+    ETYPE_UNKONWN  = 0;
+    ETYPE_STARTED  = 1 [(name) = "started"];
+    ETYPE_FINISHED = 2 [(name) = "finished"];
+    ETYPE_QUEUED   = 3 [(name) = "queued"];
+}
+
+extend google.protobuf.EnumValueOptions {
+    optional string name = 42445;
+}
+
+// PipelineRun is captures the data of a pipeline execution
+message PipelineRun  {
+    EventType type = 1;
+    Pipeline pipeline = 2;
+	string name = 3 [
+        (buf.validate.field).string = {
+            pattern: "^[-_a-zA-Z0-9]$",
+            max_len: 200,
+        }
+    ];
+    google.protobuf.Timestamp timestamp = 4;
+    google.protobuf.Struct payload = 5;
+}
+
+// StepRun captures the information of a step execution
+message StepRun {
+    EventType type = 1;
+	Step step = 2;
+    PipelineRun pipeline_run = 3;
+    google.protobuf.Timestamp timestamp = 4;
+    google.protobuf.Struct payload = 5;
+}

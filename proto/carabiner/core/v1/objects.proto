@@ -1,0 +1,61 @@
+// SPDX-FileCopyrightText: Copyright 2025 Carabiner Systems, Inc
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+package carabiner.core.v1;
+
+import "google/protobuf/timestamp.proto";
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/carabiner-dev/core/api/v1";
+
+// A system abstracts a system capable of handling one or more stages
+// of the SDLC. A CI/CD system, for example, can handle builds
+message System {
+	string ID = 1 [
+		(buf.validate.field).string = {uuid: true}
+	];
+	string Name = 2;
+	string Type = 3;
+}
+
+// Namespace abstracts a namespace inside of a system
+message Namespace {
+	string ID = 1 [
+		(buf.validate.field).string = {uuid: true}
+	];
+	System system = 2;
+	string name = 3 [
+        (buf.validate.field).string = {
+            pattern: "^[-_a-zA-Z0-9]$",
+            max_len: 200,
+        }
+    ];
+}
+
+// Pipeline abstracts a collection of steps
+message Pipeline  {
+    string ID = 1 [
+		(buf.validate.field).string = {uuid: true}
+	];
+	string name = 2 [
+        (buf.validate.field).string = {
+            pattern: "^[-_a-zA-Z0-9]$",
+            max_len: 200,
+        }
+    ];
+}
+
+// Step is a CI/CD operation part of a pipeline
+message Step {
+	string ID = 1 [
+		(buf.validate.field).string = {uuid: true}
+	];
+	string name = 2 [
+        (buf.validate.field).string = {
+            pattern: "^[-_a-zA-Z0-9]$",
+            max_len: 200,
+        }
+    ];
+	Pipeline pipeline = 3;
+}
