@@ -6,8 +6,8 @@ version: v2
 deps:
   - buf.build/bufbuild/protovalidate
 modules:
-  - path: vendor/attestation/protos
-  - path: proto/carabiner/core
+  # - path: vendor/attestation/protos
+  - path: proto/
     lint:
       except:
         - ENUM_VALUE_PREFIX
