@@ -282,8 +282,8 @@ const file_carabiner_core_v1_objects_proto_rawDesc = "" +
 	"\x04Step\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12-\n" +
 	"\x04name\x18\x02 \x01(\tB\x19\xbaH\x16r\x14\x18\xc8\x012\x0f^[-_a-zA-Z0-9]$R\x04name\x127\n" +
-	"\bpipeline\x18\x03 \x01(\v2\x1b.carabiner.core.v1.PipelineR\bpipelineB\xbb\x01\n" +
-	"\x15com.carabiner.core.v1B\fObjectsProtoP\x01Z.github.com/carabiner-dev/api/carabiner/core/v1\xa2\x02\x03CCX\xaa\x02\x11Carabiner.Core.V1\xca\x02\x11Carabiner\\Core\\V1\xe2\x02\x1dCarabiner\\Core\\V1\\GPBMetadata\xea\x02\x13Carabiner::Core::V1b\x06proto3"
+	"\bpipeline\x18\x03 \x01(\v2\x1b.carabiner.core.v1.PipelineR\bpipelineB\xc0\x01\n" +
+	"\x15com.carabiner.core.v1B\fObjectsProtoP\x01Z3github.com/carabiner-dev/core/api/carabiner/core/v1\xa2\x02\x03CCX\xaa\x02\x11Carabiner.Core.V1\xca\x02\x11Carabiner\\Core\\V1\xe2\x02\x1dCarabiner\\Core\\V1\\GPBMetadata\xea\x02\x13Carabiner::Core::V1b\x06proto3"
 
 var (
 	file_carabiner_core_v1_objects_proto_rawDescOnce sync.Once

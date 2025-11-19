@@ -7,7 +7,7 @@ package carabiner.core.v1;
 import "google/protobuf/timestamp.proto";
 import "buf/validate/validate.proto";
 
-option go_package = "github.com/carabiner-dev/api/carabiner/core/v1";
+option go_package = "github.com/carabiner-dev/core/api/carabiner/core/v1";
 
 // A system abstracts a system capable of handling one or more stages
 // of the SDLC. A CI/CD system, for example, can handle builds

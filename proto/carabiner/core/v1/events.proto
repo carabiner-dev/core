@@ -13,7 +13,7 @@ import "google/protobuf/descriptor.proto";
 
 // import "v1/policy.proto";
 
-option go_package = "github.com/carabiner-dev/api/carabiner/core/v1";
+option go_package = "github.com/carabiner-dev/core/api/carabiner/core/v1";
 
 enum EventType {
     ETYPE_UNKONWN  = 0;
