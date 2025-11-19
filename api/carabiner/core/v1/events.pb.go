@@ -274,8 +274,8 @@ const file_carabiner_core_v1_events_proto_rawDesc = "" +
 	"\x0eETYPE_FINISHED\x10\x02\x1a\f\xea\xdc\x14\bfinished\x12\x1c\n" +
 	"\fETYPE_QUEUED\x10\x03\x1a\n" +
 	"\xea\xdc\x14\x06queued::\n" +
-	"\x04name\x12!.google.protobuf.EnumValueOptions\x18\xcd\xcb\x02 \x01(\tR\x04name\x88\x01\x01B\xb0\x01\n" +
-	"\x15com.carabiner.core.v1B\vEventsProtoP\x01Z$github.com/carabiner-dev/core/api/v1\xa2\x02\x03CCX\xaa\x02\x11Carabiner.Core.V1\xca\x02\x11Carabiner\\Core\\V1\xe2\x02\x1dCarabiner\\Core\\V1\\GPBMetadata\xea\x02\x13Carabiner::Core::V1b\x06proto3"
+	"\x04name\x12!.google.protobuf.EnumValueOptions\x18\xcd\xcb\x02 \x01(\tR\x04name\x88\x01\x01B\xba\x01\n" +
+	"\x15com.carabiner.core.v1B\vEventsProtoP\x01Z.github.com/carabiner-dev/api/carabiner/core/v1\xa2\x02\x03CCX\xaa\x02\x11Carabiner.Core.V1\xca\x02\x11Carabiner\\Core\\V1\xe2\x02\x1dCarabiner\\Core\\V1\\GPBMetadata\xea\x02\x13Carabiner::Core::V1b\x06proto3"
 
 var (
 	file_carabiner_core_v1_events_proto_rawDescOnce sync.Once
