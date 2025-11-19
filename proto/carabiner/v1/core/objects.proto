@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 syntax = "proto3";
-package carabiner.core.v1;
+package carabiner.v1.core;
 
 import "google/protobuf/timestamp.proto";
 import "buf/validate/validate.proto";
