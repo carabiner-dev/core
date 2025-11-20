@@ -83,7 +83,7 @@ func (EventType) EnumDescriptor() ([]byte, []int) {
 // PipelineRun is captures the data of a pipeline execution
 type PipelineRun struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          EventType              `protobuf:"varint,1,opt,name=type,proto3,enum=carabiner.core.v1.EventType" json:"type,omitempty"`
+	Type          EventType              `protobuf:"varint,1,opt,name=type,proto3,enum=carabiner.v1.core.EventType" json:"type,omitempty"`
 	Pipeline      *Pipeline              `protobuf:"bytes,2,opt,name=pipeline,proto3" json:"pipeline,omitempty"`
 	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
@@ -160,7 +160,7 @@ func (x *PipelineRun) GetPayload() *structpb.Struct {
 // StepRun captures the information of a step execution
 type StepRun struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          EventType              `protobuf:"varint,1,opt,name=type,proto3,enum=carabiner.core.v1.EventType" json:"type,omitempty"`
+	Type          EventType              `protobuf:"varint,1,opt,name=type,proto3,enum=carabiner.v1.core.EventType" json:"type,omitempty"`
 	Step          *Step                  `protobuf:"bytes,2,opt,name=step,proto3" json:"step,omitempty"`
 	PipelineRun   *PipelineRun           `protobuf:"bytes,3,opt,name=pipeline_run,json=pipelineRun,proto3" json:"pipeline_run,omitempty"`
 	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
@@ -239,7 +239,7 @@ var file_carabiner_v1_core_events_proto_extTypes = []protoimpl.ExtensionInfo{
 		ExtendedType:  (*descriptorpb.EnumValueOptions)(nil),
 		ExtensionType: (*string)(nil),
 		Field:         42445,
-		Name:          "carabiner.core.v1.name",
+		Name:          "carabiner.v1.core.name",
 		Tag:           "bytes,42445,opt,name=name",
 		Filename:      "carabiner/v1/core/events.proto",
 	},
@@ -255,17 +255,17 @@ var File_carabiner_v1_core_events_proto protoreflect.FileDescriptor
 
 const file_carabiner_v1_core_events_proto_rawDesc = "" +
 	"\n" +
-	"\x1ecarabiner/v1/core/events.proto\x12\x11carabiner.core.v1\x1a\x1fcarabiner/v1/core/objects.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a google/protobuf/descriptor.proto\"\x94\x02\n" +
+	"\x1ecarabiner/v1/core/events.proto\x12\x11carabiner.v1.core\x1a\x1fcarabiner/v1/core/objects.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a google/protobuf/descriptor.proto\"\x94\x02\n" +
 	"\vPipelineRun\x120\n" +
-	"\x04type\x18\x01 \x01(\x0e2\x1c.carabiner.core.v1.EventTypeR\x04type\x127\n" +
-	"\bpipeline\x18\x02 \x01(\v2\x1b.carabiner.core.v1.PipelineR\bpipeline\x12-\n" +
+	"\x04type\x18\x01 \x01(\x0e2\x1c.carabiner.v1.core.EventTypeR\x04type\x127\n" +
+	"\bpipeline\x18\x02 \x01(\v2\x1b.carabiner.v1.core.PipelineR\bpipeline\x12-\n" +
 	"\x04name\x18\x03 \x01(\tB\x19\xbaH\x16r\x14\x18\xc8\x012\x0f^[-_a-zA-Z0-9]$R\x04name\x128\n" +
 	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x121\n" +
 	"\apayload\x18\x05 \x01(\v2\x17.google.protobuf.StructR\apayload\"\x98\x02\n" +
 	"\aStepRun\x120\n" +
-	"\x04type\x18\x01 \x01(\x0e2\x1c.carabiner.core.v1.EventTypeR\x04type\x12+\n" +
-	"\x04step\x18\x02 \x01(\v2\x17.carabiner.core.v1.StepR\x04step\x12A\n" +
-	"\fpipeline_run\x18\x03 \x01(\v2\x1e.carabiner.core.v1.PipelineRunR\vpipelineRun\x128\n" +
+	"\x04type\x18\x01 \x01(\x0e2\x1c.carabiner.v1.core.EventTypeR\x04type\x12+\n" +
+	"\x04step\x18\x02 \x01(\v2\x17.carabiner.v1.core.StepR\x04step\x12A\n" +
+	"\fpipeline_run\x18\x03 \x01(\v2\x1e.carabiner.v1.core.PipelineRunR\vpipelineRun\x128\n" +
 	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x121\n" +
 	"\apayload\x18\x05 \x01(\v2\x17.google.protobuf.StructR\apayload*~\n" +
 	"\tEventType\x12\x11\n" +
@@ -275,7 +275,7 @@ const file_carabiner_v1_core_events_proto_rawDesc = "" +
 	"\fETYPE_QUEUED\x10\x03\x1a\n" +
 	"\xea\xdc\x14\x06queued::\n" +
 	"\x04name\x12!.google.protobuf.EnumValueOptions\x18\xcd\xcb\x02 \x01(\tR\x04name\x88\x01\x01B\xbf\x01\n" +
-	"\x15com.carabiner.core.v1B\vEventsProtoP\x01Z3github.com/carabiner-dev/core/api/carabiner/v1/core\xa2\x02\x03CCX\xaa\x02\x11Carabiner.Core.V1\xca\x02\x11Carabiner\\Core\\V1\xe2\x02\x1dCarabiner\\Core\\V1\\GPBMetadata\xea\x02\x13Carabiner::Core::V1b\x06proto3"
+	"\x15com.carabiner.v1.coreB\vEventsProtoP\x01Z3github.com/carabiner-dev/core/api/carabiner/v1/core\xa2\x02\x03CVC\xaa\x02\x11Carabiner.V1.Core\xca\x02\x11Carabiner\\V1\\Core\xe2\x02\x1dCarabiner\\V1\\Core\\GPBMetadata\xea\x02\x13Carabiner::V1::Coreb\x06proto3"
 
 var (
 	file_carabiner_v1_core_events_proto_rawDescOnce sync.Once
@@ -292,26 +292,26 @@ func file_carabiner_v1_core_events_proto_rawDescGZIP() []byte {
 var file_carabiner_v1_core_events_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_carabiner_v1_core_events_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_carabiner_v1_core_events_proto_goTypes = []any{
-	(EventType)(0),                        // 0: carabiner.core.v1.EventType
-	(*PipelineRun)(nil),                   // 1: carabiner.core.v1.PipelineRun
-	(*StepRun)(nil),                       // 2: carabiner.core.v1.StepRun
-	(*Pipeline)(nil),                      // 3: carabiner.core.v1.Pipeline
+	(EventType)(0),                        // 0: carabiner.v1.core.EventType
+	(*PipelineRun)(nil),                   // 1: carabiner.v1.core.PipelineRun
+	(*StepRun)(nil),                       // 2: carabiner.v1.core.StepRun
+	(*Pipeline)(nil),                      // 3: carabiner.v1.core.Pipeline
 	(*timestamppb.Timestamp)(nil),         // 4: google.protobuf.Timestamp
 	(*structpb.Struct)(nil),               // 5: google.protobuf.Struct
-	(*Step)(nil),                          // 6: carabiner.core.v1.Step
+	(*Step)(nil),                          // 6: carabiner.v1.core.Step
 	(*descriptorpb.EnumValueOptions)(nil), // 7: google.protobuf.EnumValueOptions
 }
 var file_carabiner_v1_core_events_proto_depIdxs = []int32{
-	0,  // 0: carabiner.core.v1.PipelineRun.type:type_name -> carabiner.core.v1.EventType
-	3,  // 1: carabiner.core.v1.PipelineRun.pipeline:type_name -> carabiner.core.v1.Pipeline
-	4,  // 2: carabiner.core.v1.PipelineRun.timestamp:type_name -> google.protobuf.Timestamp
-	5,  // 3: carabiner.core.v1.PipelineRun.payload:type_name -> google.protobuf.Struct
-	0,  // 4: carabiner.core.v1.StepRun.type:type_name -> carabiner.core.v1.EventType
-	6,  // 5: carabiner.core.v1.StepRun.step:type_name -> carabiner.core.v1.Step
-	1,  // 6: carabiner.core.v1.StepRun.pipeline_run:type_name -> carabiner.core.v1.PipelineRun
-	4,  // 7: carabiner.core.v1.StepRun.timestamp:type_name -> google.protobuf.Timestamp
-	5,  // 8: carabiner.core.v1.StepRun.payload:type_name -> google.protobuf.Struct
-	7,  // 9: carabiner.core.v1.name:extendee -> google.protobuf.EnumValueOptions
+	0,  // 0: carabiner.v1.core.PipelineRun.type:type_name -> carabiner.v1.core.EventType
+	3,  // 1: carabiner.v1.core.PipelineRun.pipeline:type_name -> carabiner.v1.core.Pipeline
+	4,  // 2: carabiner.v1.core.PipelineRun.timestamp:type_name -> google.protobuf.Timestamp
+	5,  // 3: carabiner.v1.core.PipelineRun.payload:type_name -> google.protobuf.Struct
+	0,  // 4: carabiner.v1.core.StepRun.type:type_name -> carabiner.v1.core.EventType
+	6,  // 5: carabiner.v1.core.StepRun.step:type_name -> carabiner.v1.core.Step
+	1,  // 6: carabiner.v1.core.StepRun.pipeline_run:type_name -> carabiner.v1.core.PipelineRun
+	4,  // 7: carabiner.v1.core.StepRun.timestamp:type_name -> google.protobuf.Timestamp
+	5,  // 8: carabiner.v1.core.StepRun.payload:type_name -> google.protobuf.Struct
+	7,  // 9: carabiner.v1.core.name:extendee -> google.protobuf.EnumValueOptions
 	10, // [10:10] is the sub-list for method output_type
 	10, // [10:10] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name

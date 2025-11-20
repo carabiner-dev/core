@@ -267,14 +267,14 @@ var File_carabiner_v1_core_objects_proto protoreflect.FileDescriptor
 
 const file_carabiner_v1_core_objects_proto_rawDesc = "" +
 	"\n" +
-	"\x1fcarabiner/v1/core/objects.proto\x12\x11carabiner.core.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bbuf/validate/validate.proto\"J\n" +
+	"\x1fcarabiner/v1/core/objects.proto\x12\x11carabiner.v1.core\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bbuf/validate/validate.proto\"a\n" +
 	"\x06System\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12\x12\n" +
-	"\x04Name\x18\x02 \x01(\tR\x04Name\x12\x12\n" +
-	"\x04Type\x18\x03 \x01(\tR\x04Type\"\x87\x01\n" +
+	"\x04Name\x18\x02 \x01(\tR\x04Name\x12)\n" +
+	"\x04Type\x18\x03 \x01(\tB\x15\xbaH\x12r\x10R\x06githubR\x06gitlabR\x04Type\"\x87\x01\n" +
 	"\tNamespace\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x121\n" +
-	"\x06system\x18\x02 \x01(\v2\x19.carabiner.core.v1.SystemR\x06system\x12-\n" +
+	"\x06system\x18\x02 \x01(\v2\x19.carabiner.v1.core.SystemR\x06system\x12-\n" +
 	"\x04name\x18\x03 \x01(\tB\x19\xbaH\x16r\x14\x18\xc8\x012\x0f^[-_a-zA-Z0-9]$R\x04name\"S\n" +
 	"\bPipeline\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12-\n" +
@@ -282,8 +282,8 @@ const file_carabiner_v1_core_objects_proto_rawDesc = "" +
 	"\x04Step\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12-\n" +
 	"\x04name\x18\x02 \x01(\tB\x19\xbaH\x16r\x14\x18\xc8\x012\x0f^[-_a-zA-Z0-9]$R\x04name\x127\n" +
-	"\bpipeline\x18\x03 \x01(\v2\x1b.carabiner.core.v1.PipelineR\bpipelineB\xc0\x01\n" +
-	"\x15com.carabiner.core.v1B\fObjectsProtoP\x01Z3github.com/carabiner-dev/core/api/carabiner/v1/core\xa2\x02\x03CCX\xaa\x02\x11Carabiner.Core.V1\xca\x02\x11Carabiner\\Core\\V1\xe2\x02\x1dCarabiner\\Core\\V1\\GPBMetadata\xea\x02\x13Carabiner::Core::V1b\x06proto3"
+	"\bpipeline\x18\x03 \x01(\v2\x1b.carabiner.v1.core.PipelineR\bpipelineB\xc0\x01\n" +
+	"\x15com.carabiner.v1.coreB\fObjectsProtoP\x01Z3github.com/carabiner-dev/core/api/carabiner/v1/core\xa2\x02\x03CVC\xaa\x02\x11Carabiner.V1.Core\xca\x02\x11Carabiner\\V1\\Core\xe2\x02\x1dCarabiner\\V1\\Core\\GPBMetadata\xea\x02\x13Carabiner::V1::Coreb\x06proto3"
 
 var (
 	file_carabiner_v1_core_objects_proto_rawDescOnce sync.Once
@@ -299,14 +299,14 @@ func file_carabiner_v1_core_objects_proto_rawDescGZIP() []byte {
 
 var file_carabiner_v1_core_objects_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_carabiner_v1_core_objects_proto_goTypes = []any{
-	(*System)(nil),    // 0: carabiner.core.v1.System
-	(*Namespace)(nil), // 1: carabiner.core.v1.Namespace
-	(*Pipeline)(nil),  // 2: carabiner.core.v1.Pipeline
-	(*Step)(nil),      // 3: carabiner.core.v1.Step
+	(*System)(nil),    // 0: carabiner.v1.core.System
+	(*Namespace)(nil), // 1: carabiner.v1.core.Namespace
+	(*Pipeline)(nil),  // 2: carabiner.v1.core.Pipeline
+	(*Step)(nil),      // 3: carabiner.v1.core.Step
 }
 var file_carabiner_v1_core_objects_proto_depIdxs = []int32{
-	0, // 0: carabiner.core.v1.Namespace.system:type_name -> carabiner.core.v1.System
-	2, // 1: carabiner.core.v1.Step.pipeline:type_name -> carabiner.core.v1.Pipeline
+	0, // 0: carabiner.v1.core.Namespace.system:type_name -> carabiner.v1.core.System
+	2, // 1: carabiner.v1.core.Step.pipeline:type_name -> carabiner.v1.core.Pipeline
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name

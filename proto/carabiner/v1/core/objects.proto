@@ -16,7 +16,9 @@ message System {
 		(buf.validate.field).string = {uuid: true}
 	];
 	string Name = 2;
-	string Type = 3;
+	string Type = 3 [
+		(buf.validate.field).string = {in: ["github", "gitlab"]}
+	];
 }
 
 // Namespace abstracts a namespace inside of a system
