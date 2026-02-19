@@ -149,18 +149,80 @@ func (x *Namespace) GetName() string {
 	return ""
 }
 
+// Repository abstracts a collection of steps
+type Repository struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ID            string                 `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Namespace     *Namespace             `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Repository) Reset() {
+	*x = Repository{}
+	mi := &file_carabiner_core_v1_objects_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Repository) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Repository) ProtoMessage() {}
+
+func (x *Repository) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_objects_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Repository.ProtoReflect.Descriptor instead.
+func (*Repository) Descriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_objects_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Repository) GetID() string {
+	if x != nil {
+		return x.ID
+	}
+	return ""
+}
+
+func (x *Repository) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Repository) GetNamespace() *Namespace {
+	if x != nil {
+		return x.Namespace
+	}
+	return nil
+}
+
 // Pipeline abstracts a collection of steps
 type Pipeline struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ID            string                 `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Repository    *Repository            `protobuf:"bytes,3,opt,name=repository,proto3" json:"repository,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Pipeline) Reset() {
 	*x = Pipeline{}
-	mi := &file_carabiner_core_v1_objects_proto_msgTypes[2]
+	mi := &file_carabiner_core_v1_objects_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -172,7 +234,7 @@ func (x *Pipeline) String() string {
 func (*Pipeline) ProtoMessage() {}
 
 func (x *Pipeline) ProtoReflect() protoreflect.Message {
-	mi := &file_carabiner_core_v1_objects_proto_msgTypes[2]
+	mi := &file_carabiner_core_v1_objects_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -185,7 +247,7 @@ func (x *Pipeline) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Pipeline.ProtoReflect.Descriptor instead.
 func (*Pipeline) Descriptor() ([]byte, []int) {
-	return file_carabiner_core_v1_objects_proto_rawDescGZIP(), []int{2}
+	return file_carabiner_core_v1_objects_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Pipeline) GetID() string {
@@ -202,6 +264,13 @@ func (x *Pipeline) GetName() string {
 	return ""
 }
 
+func (x *Pipeline) GetRepository() *Repository {
+	if x != nil {
+		return x.Repository
+	}
+	return nil
+}
+
 // Step is a CI/CD operation part of a pipeline
 type Step struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -214,7 +283,7 @@ type Step struct {
 
 func (x *Step) Reset() {
 	*x = Step{}
-	mi := &file_carabiner_core_v1_objects_proto_msgTypes[3]
+	mi := &file_carabiner_core_v1_objects_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -226,7 +295,7 @@ func (x *Step) String() string {
 func (*Step) ProtoMessage() {}
 
 func (x *Step) ProtoReflect() protoreflect.Message {
-	mi := &file_carabiner_core_v1_objects_proto_msgTypes[3]
+	mi := &file_carabiner_core_v1_objects_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -239,7 +308,7 @@ func (x *Step) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Step.ProtoReflect.Descriptor instead.
 func (*Step) Descriptor() ([]byte, []int) {
-	return file_carabiner_core_v1_objects_proto_rawDescGZIP(), []int{3}
+	return file_carabiner_core_v1_objects_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Step) GetID() string {
@@ -275,10 +344,18 @@ const file_carabiner_core_v1_objects_proto_rawDesc = "" +
 	"\tNamespace\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x121\n" +
 	"\x06system\x18\x02 \x01(\v2\x19.carabiner.core.v1.SystemR\x06system\x12-\n" +
-	"\x04name\x18\x03 \x01(\tB\x19\xbaH\x16r\x14\x18\xc8\x012\x0f^[-_a-zA-Z0-9]$R\x04name\"S\n" +
+	"\x04name\x18\x03 \x01(\tB\x19\xbaH\x16r\x14\x18\xc8\x012\x0f^[-_a-zA-Z0-9]$R\x04name\"\x91\x01\n" +
+	"\n" +
+	"Repository\x12\x18\n" +
+	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12-\n" +
+	"\x04name\x18\x02 \x01(\tB\x19\xbaH\x16r\x14\x18\xc8\x012\x0f^[-_a-zA-Z0-9]$R\x04name\x12:\n" +
+	"\tnamespace\x18\x03 \x01(\v2\x1c.carabiner.core.v1.NamespaceR\tnamespace\"\x92\x01\n" +
 	"\bPipeline\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12-\n" +
-	"\x04name\x18\x02 \x01(\tB\x19\xbaH\x16r\x14\x18\xc8\x012\x0f^[-_a-zA-Z0-9]$R\x04name\"\x88\x01\n" +
+	"\x04name\x18\x02 \x01(\tB\x19\xbaH\x16r\x14\x18\xc8\x012\x0f^[-_a-zA-Z0-9]$R\x04name\x12=\n" +
+	"\n" +
+	"repository\x18\x03 \x01(\v2\x1d.carabiner.core.v1.RepositoryR\n" +
+	"repository\"\x88\x01\n" +
 	"\x04Step\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12-\n" +
 	"\x04name\x18\x02 \x01(\tB\x19\xbaH\x16r\x14\x18\xc8\x012\x0f^[-_a-zA-Z0-9]$R\x04name\x127\n" +
@@ -297,21 +374,24 @@ func file_carabiner_core_v1_objects_proto_rawDescGZIP() []byte {
 	return file_carabiner_core_v1_objects_proto_rawDescData
 }
 
-var file_carabiner_core_v1_objects_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_carabiner_core_v1_objects_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_carabiner_core_v1_objects_proto_goTypes = []any{
-	(*System)(nil),    // 0: carabiner.core.v1.System
-	(*Namespace)(nil), // 1: carabiner.core.v1.Namespace
-	(*Pipeline)(nil),  // 2: carabiner.core.v1.Pipeline
-	(*Step)(nil),      // 3: carabiner.core.v1.Step
+	(*System)(nil),     // 0: carabiner.core.v1.System
+	(*Namespace)(nil),  // 1: carabiner.core.v1.Namespace
+	(*Repository)(nil), // 2: carabiner.core.v1.Repository
+	(*Pipeline)(nil),   // 3: carabiner.core.v1.Pipeline
+	(*Step)(nil),       // 4: carabiner.core.v1.Step
 }
 var file_carabiner_core_v1_objects_proto_depIdxs = []int32{
 	0, // 0: carabiner.core.v1.Namespace.system:type_name -> carabiner.core.v1.System
-	2, // 1: carabiner.core.v1.Step.pipeline:type_name -> carabiner.core.v1.Pipeline
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	1, // 1: carabiner.core.v1.Repository.namespace:type_name -> carabiner.core.v1.Namespace
+	2, // 2: carabiner.core.v1.Pipeline.repository:type_name -> carabiner.core.v1.Repository
+	3, // 3: carabiner.core.v1.Step.pipeline:type_name -> carabiner.core.v1.Pipeline
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_carabiner_core_v1_objects_proto_init() }
@@ -325,7 +405,7 @@ func file_carabiner_core_v1_objects_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_carabiner_core_v1_objects_proto_rawDesc), len(file_carabiner_core_v1_objects_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

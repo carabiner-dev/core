@@ -35,6 +35,20 @@ message Namespace {
     ];
 }
 
+// Repository abstracts a collection of steps
+message Repository  {
+    string ID = 1 [
+		(buf.validate.field).string = {uuid: true}
+	];
+	string name = 2 [
+        (buf.validate.field).string = {
+            pattern: "^[-_a-zA-Z0-9]$",
+            max_len: 200,
+        }
+    ];
+	Namespace namespace = 3;
+}
+
 // Pipeline abstracts a collection of steps
 message Pipeline  {
     string ID = 1 [
@@ -46,6 +60,7 @@ message Pipeline  {
             max_len: 200,
         }
     ];
+	Repository repository = 3;
 }
 
 // Step is a CI/CD operation part of a pipeline
