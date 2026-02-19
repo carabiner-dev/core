@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 syntax = "proto3";
-package carabiner.v1.core;
+package carabiner.core.v1;
 
-import "carabiner/v1/core/objects.proto";
+import "carabiner/core/v1/objects.proto";
 import "google/protobuf/timestamp.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/descriptor.proto";
 
-option go_package = "github.com/carabiner-dev/core/api/carabiner/v1/core";
+option go_package = "github.com/carabiner-dev/core/api/carabiner/core/v1;core";
 
 enum EventType {
     ETYPE_UNKONWN  = 0;
