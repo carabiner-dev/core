@@ -15,8 +15,9 @@ message System {
 	string ID = 1 [
 		(buf.validate.field).string = {uuid: true}
 	];
-	string Name = 2;
-	string Type = 3 [
+	string organization = 2;
+	string name = 3;
+	string type = 4 [
 		(buf.validate.field).string = {in: ["github", "gitlab"]}
 	];
 }

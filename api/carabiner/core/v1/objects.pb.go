@@ -31,8 +31,9 @@ const (
 type System struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ID            string                 `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=Name,proto3" json:"Name,omitempty"`
-	Type          string                 `protobuf:"bytes,3,opt,name=Type,proto3" json:"Type,omitempty"`
+	Organization  string                 `protobuf:"bytes,2,opt,name=organization,proto3" json:"organization,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Type          string                 `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -70,6 +71,13 @@ func (*System) Descriptor() ([]byte, []int) {
 func (x *System) GetID() string {
 	if x != nil {
 		return x.ID
+	}
+	return ""
+}
+
+func (x *System) GetOrganization() string {
+	if x != nil {
+		return x.Organization
 	}
 	return ""
 }
@@ -336,11 +344,12 @@ var File_carabiner_core_v1_objects_proto protoreflect.FileDescriptor
 
 const file_carabiner_core_v1_objects_proto_rawDesc = "" +
 	"\n" +
-	"\x1fcarabiner/core/v1/objects.proto\x12\x11carabiner.core.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bbuf/validate/validate.proto\"a\n" +
+	"\x1fcarabiner/core/v1/objects.proto\x12\x11carabiner.core.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bbuf/validate/validate.proto\"\x85\x01\n" +
 	"\x06System\x12\x18\n" +
-	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12\x12\n" +
-	"\x04Name\x18\x02 \x01(\tR\x04Name\x12)\n" +
-	"\x04Type\x18\x03 \x01(\tB\x15\xbaH\x12r\x10R\x06githubR\x06gitlabR\x04Type\"\x87\x01\n" +
+	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12\"\n" +
+	"\forganization\x18\x02 \x01(\tR\forganization\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12)\n" +
+	"\x04type\x18\x04 \x01(\tB\x15\xbaH\x12r\x10R\x06githubR\x06gitlabR\x04type\"\x87\x01\n" +
 	"\tNamespace\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x121\n" +
 	"\x06system\x18\x02 \x01(\v2\x19.carabiner.core.v1.SystemR\x06system\x12-\n" +
