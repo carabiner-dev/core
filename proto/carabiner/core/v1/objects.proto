@@ -30,7 +30,7 @@ message Namespace {
 	System system = 2;
 	string name = 3 [
         (buf.validate.field).string = {
-            pattern: "^[-_a-zA-Z0-9]$",
+            pattern: "^[-_a-zA-Z0-9]+$",
             max_len: 200,
         }
     ];
@@ -43,7 +43,7 @@ message Repository  {
 	];
 	string name = 2 [
         (buf.validate.field).string = {
-            pattern: "^[-_a-zA-Z0-9]$",
+            pattern: "^[-_a-zA-Z0-9]+$",
             max_len: 200,
         }
     ];
@@ -57,7 +57,7 @@ message Pipeline  {
 	];
 	string name = 2 [
         (buf.validate.field).string = {
-            pattern: "^[-_a-zA-Z0-9]$",
+            pattern: "^[-_a-zA-Z0-9]+$",
             max_len: 200,
         }
     ];
@@ -71,7 +71,7 @@ message Step {
 	];
 	string name = 2 [
         (buf.validate.field).string = {
-            pattern: "^[-_a-zA-Z0-9]$",
+            pattern: "^[-_a-zA-Z0-9]+$",
             max_len: 200,
         }
     ];
