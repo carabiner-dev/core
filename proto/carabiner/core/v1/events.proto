@@ -29,7 +29,7 @@ message PipelineRun  {
     Pipeline pipeline = 2;
 	string name = 3 [
         (buf.validate.field).string = {
-            pattern: "^[-_a-zA-Z0-9]$",
+            pattern: "^[-_a-zA-Z0-9]+$",
             max_len: 200,
         }
     ];

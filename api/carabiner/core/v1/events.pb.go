@@ -255,11 +255,11 @@ var File_carabiner_core_v1_events_proto protoreflect.FileDescriptor
 
 const file_carabiner_core_v1_events_proto_rawDesc = "" +
 	"\n" +
-	"\x1ecarabiner/core/v1/events.proto\x12\x11carabiner.core.v1\x1a\x1fcarabiner/core/v1/objects.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a google/protobuf/descriptor.proto\"\x94\x02\n" +
+	"\x1ecarabiner/core/v1/events.proto\x12\x11carabiner.core.v1\x1a\x1fcarabiner/core/v1/objects.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a google/protobuf/descriptor.proto\"\x95\x02\n" +
 	"\vPipelineRun\x120\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1c.carabiner.core.v1.EventTypeR\x04type\x127\n" +
-	"\bpipeline\x18\x02 \x01(\v2\x1b.carabiner.core.v1.PipelineR\bpipeline\x12-\n" +
-	"\x04name\x18\x03 \x01(\tB\x19\xbaH\x16r\x14\x18\xc8\x012\x0f^[-_a-zA-Z0-9]$R\x04name\x128\n" +
+	"\bpipeline\x18\x02 \x01(\v2\x1b.carabiner.core.v1.PipelineR\bpipeline\x12.\n" +
+	"\x04name\x18\x03 \x01(\tB\x1a\xbaH\x17r\x15\x18\xc8\x012\x10^[-_a-zA-Z0-9]+$R\x04name\x128\n" +
 	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x121\n" +
 	"\apayload\x18\x05 \x01(\v2\x17.google.protobuf.StructR\apayload\"\x98\x02\n" +
 	"\aStepRun\x120\n" +

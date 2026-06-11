@@ -9,6 +9,15 @@ import "buf/validate/validate.proto";
 
 option go_package = "github.com/carabiner-dev/core/api/carabiner/core/v1;core";
 
+// Status represents the lifecycle state of a resource. STATUS_UNSPECIFIED is
+// treated as STATUS_ACTIVE for backward compatibility with records written
+// before the field existed.
+enum Status {
+	STATUS_UNSPECIFIED = 0;
+	STATUS_ACTIVE = 1;
+	STATUS_SUSPENDED = 2;
+}
+
 // A system abstracts a system capable of handling one or more stages
 // of the SDLC. A CI/CD system, for example, can handle builds
 message System {
@@ -34,6 +43,9 @@ message Namespace {
             max_len: 200,
         }
     ];
+	// Lifecycle status. Set to STATUS_SUSPENDED when the backing GitHub App
+	// installation is suspended. Unspecified is treated as active.
+	Status status = 4;
 }
 
 // Repository abstracts a collection of steps

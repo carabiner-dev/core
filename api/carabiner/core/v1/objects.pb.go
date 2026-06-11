@@ -26,6 +26,58 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Status represents the lifecycle state of a resource. STATUS_UNSPECIFIED is
+// treated as STATUS_ACTIVE for backward compatibility with records written
+// before the field existed.
+type Status int32
+
+const (
+	Status_STATUS_UNSPECIFIED Status = 0
+	Status_STATUS_ACTIVE      Status = 1
+	Status_STATUS_SUSPENDED   Status = 2
+)
+
+// Enum value maps for Status.
+var (
+	Status_name = map[int32]string{
+		0: "STATUS_UNSPECIFIED",
+		1: "STATUS_ACTIVE",
+		2: "STATUS_SUSPENDED",
+	}
+	Status_value = map[string]int32{
+		"STATUS_UNSPECIFIED": 0,
+		"STATUS_ACTIVE":      1,
+		"STATUS_SUSPENDED":   2,
+	}
+)
+
+func (x Status) Enum() *Status {
+	p := new(Status)
+	*p = x
+	return p
+}
+
+func (x Status) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Status) Descriptor() protoreflect.EnumDescriptor {
+	return file_carabiner_core_v1_objects_proto_enumTypes[0].Descriptor()
+}
+
+func (Status) Type() protoreflect.EnumType {
+	return &file_carabiner_core_v1_objects_proto_enumTypes[0]
+}
+
+func (x Status) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Status.Descriptor instead.
+func (Status) EnumDescriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_objects_proto_rawDescGZIP(), []int{0}
+}
+
 // A system abstracts a system capable of handling one or more stages
 // of the SDLC. A CI/CD system, for example, can handle builds
 type System struct {
@@ -98,10 +150,13 @@ func (x *System) GetType() string {
 
 // Namespace abstracts a namespace inside of a system
 type Namespace struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ID            string                 `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
-	System        *System                `protobuf:"bytes,2,opt,name=system,proto3" json:"system,omitempty"`
-	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	ID     string                 `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	System *System                `protobuf:"bytes,2,opt,name=system,proto3" json:"system,omitempty"`
+	Name   string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	// Lifecycle status. Set to STATUS_SUSPENDED when the backing GitHub App
+	// installation is suspended. Unspecified is treated as active.
+	Status        Status `protobuf:"varint,4,opt,name=status,proto3,enum=carabiner.core.v1.Status" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -155,6 +210,13 @@ func (x *Namespace) GetName() string {
 		return x.Name
 	}
 	return ""
+}
+
+func (x *Namespace) GetStatus() Status {
+	if x != nil {
+		return x.Status
+	}
+	return Status_STATUS_UNSPECIFIED
 }
 
 // Repository abstracts a collection of steps
@@ -349,11 +411,12 @@ const file_carabiner_core_v1_objects_proto_rawDesc = "" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12\"\n" +
 	"\forganization\x18\x02 \x01(\tR\forganization\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12)\n" +
-	"\x04type\x18\x04 \x01(\tB\x15\xbaH\x12r\x10R\x06githubR\x06gitlabR\x04type\"\x88\x01\n" +
+	"\x04type\x18\x04 \x01(\tB\x15\xbaH\x12r\x10R\x06githubR\x06gitlabR\x04type\"\xbb\x01\n" +
 	"\tNamespace\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x121\n" +
 	"\x06system\x18\x02 \x01(\v2\x19.carabiner.core.v1.SystemR\x06system\x12.\n" +
-	"\x04name\x18\x03 \x01(\tB\x1a\xbaH\x17r\x15\x18\xc8\x012\x10^[-_a-zA-Z0-9]+$R\x04name\"\x92\x01\n" +
+	"\x04name\x18\x03 \x01(\tB\x1a\xbaH\x17r\x15\x18\xc8\x012\x10^[-_a-zA-Z0-9]+$R\x04name\x121\n" +
+	"\x06status\x18\x04 \x01(\x0e2\x19.carabiner.core.v1.StatusR\x06status\"\x92\x01\n" +
 	"\n" +
 	"Repository\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12.\n" +
@@ -368,7 +431,11 @@ const file_carabiner_core_v1_objects_proto_rawDesc = "" +
 	"\x04Step\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12.\n" +
 	"\x04name\x18\x02 \x01(\tB\x1a\xbaH\x17r\x15\x18\xc8\x012\x10^[-_a-zA-Z0-9]+$R\x04name\x127\n" +
-	"\bpipeline\x18\x03 \x01(\v2\x1b.carabiner.core.v1.PipelineR\bpipelineB\xc5\x01\n" +
+	"\bpipeline\x18\x03 \x01(\v2\x1b.carabiner.core.v1.PipelineR\bpipeline*I\n" +
+	"\x06Status\x12\x16\n" +
+	"\x12STATUS_UNSPECIFIED\x10\x00\x12\x11\n" +
+	"\rSTATUS_ACTIVE\x10\x01\x12\x14\n" +
+	"\x10STATUS_SUSPENDED\x10\x02B\xc5\x01\n" +
 	"\x15com.carabiner.core.v1B\fObjectsProtoP\x01Z8github.com/carabiner-dev/core/api/carabiner/core/v1;core\xa2\x02\x03CCX\xaa\x02\x11Carabiner.Core.V1\xca\x02\x11Carabiner\\Core\\V1\xe2\x02\x1dCarabiner\\Core\\V1\\GPBMetadata\xea\x02\x13Carabiner::Core::V1b\x06proto3"
 
 var (
@@ -383,24 +450,27 @@ func file_carabiner_core_v1_objects_proto_rawDescGZIP() []byte {
 	return file_carabiner_core_v1_objects_proto_rawDescData
 }
 
+var file_carabiner_core_v1_objects_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_carabiner_core_v1_objects_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_carabiner_core_v1_objects_proto_goTypes = []any{
-	(*System)(nil),     // 0: carabiner.core.v1.System
-	(*Namespace)(nil),  // 1: carabiner.core.v1.Namespace
-	(*Repository)(nil), // 2: carabiner.core.v1.Repository
-	(*Pipeline)(nil),   // 3: carabiner.core.v1.Pipeline
-	(*Step)(nil),       // 4: carabiner.core.v1.Step
+	(Status)(0),        // 0: carabiner.core.v1.Status
+	(*System)(nil),     // 1: carabiner.core.v1.System
+	(*Namespace)(nil),  // 2: carabiner.core.v1.Namespace
+	(*Repository)(nil), // 3: carabiner.core.v1.Repository
+	(*Pipeline)(nil),   // 4: carabiner.core.v1.Pipeline
+	(*Step)(nil),       // 5: carabiner.core.v1.Step
 }
 var file_carabiner_core_v1_objects_proto_depIdxs = []int32{
-	0, // 0: carabiner.core.v1.Namespace.system:type_name -> carabiner.core.v1.System
-	1, // 1: carabiner.core.v1.Repository.namespace:type_name -> carabiner.core.v1.Namespace
-	2, // 2: carabiner.core.v1.Pipeline.repository:type_name -> carabiner.core.v1.Repository
-	3, // 3: carabiner.core.v1.Step.pipeline:type_name -> carabiner.core.v1.Pipeline
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	1, // 0: carabiner.core.v1.Namespace.system:type_name -> carabiner.core.v1.System
+	0, // 1: carabiner.core.v1.Namespace.status:type_name -> carabiner.core.v1.Status
+	2, // 2: carabiner.core.v1.Repository.namespace:type_name -> carabiner.core.v1.Namespace
+	3, // 3: carabiner.core.v1.Pipeline.repository:type_name -> carabiner.core.v1.Repository
+	4, // 4: carabiner.core.v1.Step.pipeline:type_name -> carabiner.core.v1.Pipeline
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_carabiner_core_v1_objects_proto_init() }
@@ -413,13 +483,14 @@ func file_carabiner_core_v1_objects_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_carabiner_core_v1_objects_proto_rawDesc), len(file_carabiner_core_v1_objects_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_carabiner_core_v1_objects_proto_goTypes,
 		DependencyIndexes: file_carabiner_core_v1_objects_proto_depIdxs,
+		EnumInfos:         file_carabiner_core_v1_objects_proto_enumTypes,
 		MessageInfos:      file_carabiner_core_v1_objects_proto_msgTypes,
 	}.Build()
 	File_carabiner_core_v1_objects_proto = out.File
