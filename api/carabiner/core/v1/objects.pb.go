@@ -219,12 +219,31 @@ func (x *Namespace) GetStatus() Status {
 	return Status_STATUS_UNSPECIFIED
 }
 
-// Repository abstracts a collection of steps
+// Repository abstracts a source-code repository tracked under a namespace. The
+// descriptive fields below are populated from the source system when the
+// repository is connected (registered). They are system-agnostic so any system
+// (GitHub, GitLab, …) maps onto them.
 type Repository struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ID            string                 `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Namespace     *Namespace             `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	ID        string                 `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	Name      string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Namespace *Namespace             `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	// external_id is the repository's stable identifier in its source system
+	// (e.g. a GitHub numeric repository ID). It is immutable across renames and
+	// is the idempotency/lookup key for a connected repository.
+	ExternalId string `protobuf:"bytes,4,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	// slug is the repository's human-readable path within its system, e.g.
+	// "owner/repo". It is mutable: a rename changes the slug but not external_id.
+	Slug string `protobuf:"bytes,5,opt,name=slug,proto3" json:"slug,omitempty"`
+	// url is the repository's web URL.
+	Url string `protobuf:"bytes,6,opt,name=url,proto3" json:"url,omitempty"`
+	// visibility is the repository's visibility in its system, e.g. "public",
+	// "private", or "internal".
+	Visibility string `protobuf:"bytes,7,opt,name=visibility,proto3" json:"visibility,omitempty"`
+	// default_branch is the repository's default branch, e.g. "main".
+	DefaultBranch string `protobuf:"bytes,8,opt,name=default_branch,json=defaultBranch,proto3" json:"default_branch,omitempty"`
+	// description is the repository's short description.
+	Description   string `protobuf:"bytes,9,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -278,6 +297,48 @@ func (x *Repository) GetNamespace() *Namespace {
 		return x.Namespace
 	}
 	return nil
+}
+
+func (x *Repository) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
+	}
+	return ""
+}
+
+func (x *Repository) GetSlug() string {
+	if x != nil {
+		return x.Slug
+	}
+	return ""
+}
+
+func (x *Repository) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *Repository) GetVisibility() string {
+	if x != nil {
+		return x.Visibility
+	}
+	return ""
+}
+
+func (x *Repository) GetDefaultBranch() string {
+	if x != nil {
+		return x.DefaultBranch
+	}
+	return ""
+}
+
+func (x *Repository) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
 }
 
 // Pipeline abstracts a collection of steps
@@ -416,12 +477,21 @@ const file_carabiner_core_v1_objects_proto_rawDesc = "" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x121\n" +
 	"\x06system\x18\x02 \x01(\v2\x19.carabiner.core.v1.SystemR\x06system\x12.\n" +
 	"\x04name\x18\x03 \x01(\tB\x1a\xbaH\x17r\x15\x18\xc8\x012\x10^[-_a-zA-Z0-9]+$R\x04name\x121\n" +
-	"\x06status\x18\x04 \x01(\x0e2\x19.carabiner.core.v1.StatusR\x06status\"\x92\x01\n" +
+	"\x06status\x18\x04 \x01(\x0e2\x19.carabiner.core.v1.StatusR\x06status\"\xc2\x02\n" +
 	"\n" +
 	"Repository\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12.\n" +
 	"\x04name\x18\x02 \x01(\tB\x1a\xbaH\x17r\x15\x18\xc8\x012\x10^[-_a-zA-Z0-9]+$R\x04name\x12:\n" +
-	"\tnamespace\x18\x03 \x01(\v2\x1c.carabiner.core.v1.NamespaceR\tnamespace\"\x93\x01\n" +
+	"\tnamespace\x18\x03 \x01(\v2\x1c.carabiner.core.v1.NamespaceR\tnamespace\x12\x1f\n" +
+	"\vexternal_id\x18\x04 \x01(\tR\n" +
+	"externalId\x12\x12\n" +
+	"\x04slug\x18\x05 \x01(\tR\x04slug\x12\x10\n" +
+	"\x03url\x18\x06 \x01(\tR\x03url\x12\x1e\n" +
+	"\n" +
+	"visibility\x18\a \x01(\tR\n" +
+	"visibility\x12%\n" +
+	"\x0edefault_branch\x18\b \x01(\tR\rdefaultBranch\x12 \n" +
+	"\vdescription\x18\t \x01(\tR\vdescription\"\x93\x01\n" +
 	"\bPipeline\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12.\n" +
 	"\x04name\x18\x02 \x01(\tB\x1a\xbaH\x17r\x15\x18\xc8\x012\x10^[-_a-zA-Z0-9]+$R\x04name\x12=\n" +

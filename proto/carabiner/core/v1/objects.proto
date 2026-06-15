@@ -48,7 +48,10 @@ message Namespace {
 	Status status = 4;
 }
 
-// Repository abstracts a collection of steps
+// Repository abstracts a source-code repository tracked under a namespace. The
+// descriptive fields below are populated from the source system when the
+// repository is connected (registered). They are system-agnostic so any system
+// (GitHub, GitLab, …) maps onto them.
 message Repository  {
     string ID = 1 [
 		(buf.validate.field).string = {uuid: true}
@@ -60,6 +63,28 @@ message Repository  {
         }
     ];
 	Namespace namespace = 3;
+
+	// external_id is the repository's stable identifier in its source system
+	// (e.g. a GitHub numeric repository ID). It is immutable across renames and
+	// is the idempotency/lookup key for a connected repository.
+	string external_id = 4;
+
+	// slug is the repository's human-readable path within its system, e.g.
+	// "owner/repo". It is mutable: a rename changes the slug but not external_id.
+	string slug = 5;
+
+	// url is the repository's web URL.
+	string url = 6;
+
+	// visibility is the repository's visibility in its system, e.g. "public",
+	// "private", or "internal".
+	string visibility = 7;
+
+	// default_branch is the repository's default branch, e.g. "main".
+	string default_branch = 8;
+
+	// description is the repository's short description.
+	string description = 9;
 }
 
 // Pipeline abstracts a collection of steps
