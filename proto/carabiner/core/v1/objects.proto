@@ -18,6 +18,22 @@ enum Status {
 	STATUS_SUSPENDED = 2;
 }
 
+// PipelineState is the lifecycle state of a pipeline (workflow) in its source
+// system. Pipelines are soft-deleted (marked PIPELINE_STATE_DELETED) rather
+// than removed so historical runs that reference them remain viewable.
+enum PipelineState {
+	// Unspecified; treated as active for records written before the field existed.
+	PIPELINE_STATE_UNSPECIFIED = 0;
+	// The pipeline currently exists and is enabled in the source system.
+	PIPELINE_STATE_ACTIVE = 1;
+	// The pipeline exists but is disabled in the source system (e.g. a GitHub
+	// workflow disabled manually or for inactivity).
+	PIPELINE_STATE_DISABLED = 2;
+	// The pipeline no longer exists in the source system; kept for historical
+	// runs (soft delete).
+	PIPELINE_STATE_DELETED = 3;
+}
+
 // A system abstracts a system capable of handling one or more stages
 // of the SDLC. A CI/CD system, for example, can handle builds
 message System {
@@ -87,30 +103,86 @@ message Repository  {
 	string description = 9;
 }
 
-// Pipeline abstracts a collection of steps
+// Pipeline abstracts an automated workflow declared in a repository (e.g. a
+// GitHub Actions workflow or a GitLab CI pipeline). It is a declared object:
+// it exists as long as its definition lives in the repository, independent of
+// any run. A pipeline contains jobs, which contain steps.
 message Pipeline  {
+	// Carabiner-assigned unique identifier.
     string ID = 1 [
 		(buf.validate.field).string = {uuid: true}
 	];
+
+	// Human-readable display name as reported by the source system, e.g.
+	// "CI / Build". Free-form (may contain spaces and punctuation).
 	string name = 2 [
-        (buf.validate.field).string = {
-            pattern: "^[-_a-zA-Z0-9]+$",
-            max_len: 200,
-        }
+        (buf.validate.field).string = {max_len: 255}
     ];
+
+	// The repository this pipeline is declared in.
 	Repository repository = 3;
+
+	// external_id is the pipeline's stable identifier in its source system
+	// (e.g. a GitHub numeric workflow ID). It is the idempotency/lookup key for
+	// reconciling the repository's pipelines.
+	string external_id = 4;
+
+	// path is the pipeline definition's location within the repository, e.g.
+	// ".github/workflows/release.yml".
+	string path = 5;
+
+	// state is the pipeline's lifecycle state in the source system. Removed
+	// pipelines are marked PIPELINE_STATE_DELETED rather than dropped.
+	PipelineState state = 6;
 }
 
-// Step is a CI/CD operation part of a pipeline
-message Step {
+// Job abstracts a unit of execution within a pipeline that groups steps (e.g. a
+// GitHub Actions job, or a GitLab CI job). It is the intermediate level between
+// a pipeline and its steps. Systems without a job concept may model a single
+// synthetic job; systems with stages (e.g. GitLab) may record the stage name in
+// `stage`.
+message Job {
+	// Carabiner-assigned unique identifier.
 	string ID = 1 [
 		(buf.validate.field).string = {uuid: true}
 	];
+
+	// Human-readable display name as reported by the source system. Free-form.
 	string name = 2 [
-        (buf.validate.field).string = {
-            pattern: "^[-_a-zA-Z0-9]+$",
-            max_len: 200,
-        }
+        (buf.validate.field).string = {max_len: 255}
     ];
+
+	// The pipeline this job belongs to.
 	Pipeline pipeline = 3;
+
+	// external_id is the job's stable identifier in its source system. For a
+	// declared GitHub job this is its key in the workflow file (e.g. "build").
+	string external_id = 4;
+
+	// stage is an optional grouping the source system places this job in (e.g. a
+	// GitLab stage). Empty for systems without stages.
+	string stage = 5;
+}
+
+// Step is a single operation within a job (e.g. a GitHub Actions step).
+message Step {
+	// Carabiner-assigned unique identifier.
+	string ID = 1 [
+		(buf.validate.field).string = {uuid: true}
+	];
+
+	// Human-readable display name as reported by the source system. Free-form.
+	string name = 2 [
+        (buf.validate.field).string = {max_len: 255}
+    ];
+
+	// The job this step belongs to.
+	Job job = 3;
+
+	// external_id is the step's stable identifier in its source system, when one
+	// exists.
+	string external_id = 4;
+
+	// number is the step's 1-based position within its job, used to order steps.
+	uint32 number = 5;
 }

@@ -13,8 +13,6 @@ import (
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	descriptorpb "google.golang.org/protobuf/types/descriptorpb"
-	structpb "google.golang.org/protobuf/types/known/structpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -28,66 +26,181 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type EventType int32
+// RunStatus is the execution status of a pipeline, job or step run. It tracks
+// progress; the final outcome is reported separately by Conclusion once the run
+// reaches RUN_STATUS_COMPLETED.
+type RunStatus int32
 
 const (
-	EventType_ETYPE_UNKONWN  EventType = 0
-	EventType_ETYPE_STARTED  EventType = 1
-	EventType_ETYPE_FINISHED EventType = 2
-	EventType_ETYPE_QUEUED   EventType = 3
+	// Unknown / not reported.
+	RunStatus_RUN_STATUS_UNSPECIFIED RunStatus = 0
+	// Accepted by the system but not yet started (queued/waiting/pending).
+	RunStatus_RUN_STATUS_QUEUED RunStatus = 1
+	// Currently executing.
+	RunStatus_RUN_STATUS_IN_PROGRESS RunStatus = 2
+	// Finished executing; see Conclusion for the outcome.
+	RunStatus_RUN_STATUS_COMPLETED RunStatus = 3
 )
 
-// Enum value maps for EventType.
+// Enum value maps for RunStatus.
 var (
-	EventType_name = map[int32]string{
-		0: "ETYPE_UNKONWN",
-		1: "ETYPE_STARTED",
-		2: "ETYPE_FINISHED",
-		3: "ETYPE_QUEUED",
+	RunStatus_name = map[int32]string{
+		0: "RUN_STATUS_UNSPECIFIED",
+		1: "RUN_STATUS_QUEUED",
+		2: "RUN_STATUS_IN_PROGRESS",
+		3: "RUN_STATUS_COMPLETED",
 	}
-	EventType_value = map[string]int32{
-		"ETYPE_UNKONWN":  0,
-		"ETYPE_STARTED":  1,
-		"ETYPE_FINISHED": 2,
-		"ETYPE_QUEUED":   3,
+	RunStatus_value = map[string]int32{
+		"RUN_STATUS_UNSPECIFIED": 0,
+		"RUN_STATUS_QUEUED":      1,
+		"RUN_STATUS_IN_PROGRESS": 2,
+		"RUN_STATUS_COMPLETED":   3,
 	}
 )
 
-func (x EventType) Enum() *EventType {
-	p := new(EventType)
+func (x RunStatus) Enum() *RunStatus {
+	p := new(RunStatus)
 	*p = x
 	return p
 }
 
-func (x EventType) String() string {
+func (x RunStatus) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (EventType) Descriptor() protoreflect.EnumDescriptor {
+func (RunStatus) Descriptor() protoreflect.EnumDescriptor {
 	return file_carabiner_core_v1_events_proto_enumTypes[0].Descriptor()
 }
 
-func (EventType) Type() protoreflect.EnumType {
+func (RunStatus) Type() protoreflect.EnumType {
 	return &file_carabiner_core_v1_events_proto_enumTypes[0]
 }
 
-func (x EventType) Number() protoreflect.EnumNumber {
+func (x RunStatus) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use EventType.Descriptor instead.
-func (EventType) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use RunStatus.Descriptor instead.
+func (RunStatus) EnumDescriptor() ([]byte, []int) {
 	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{0}
 }
 
-// PipelineRun is captures the data of a pipeline execution
+// Conclusion is the outcome of a completed run. It is meaningful only once a run
+// reaches RUN_STATUS_COMPLETED; while in progress it is
+// RUN_CONCLUSION_UNSPECIFIED.
+type Conclusion int32
+
+const (
+	// Not yet concluded (still running) or not reported.
+	Conclusion_RUN_CONCLUSION_UNSPECIFIED Conclusion = 0
+	// Completed successfully.
+	Conclusion_RUN_CONCLUSION_SUCCESS Conclusion = 1
+	// Completed with a failure.
+	Conclusion_RUN_CONCLUSION_FAILURE Conclusion = 2
+	// Cancelled before completing.
+	Conclusion_RUN_CONCLUSION_CANCELLED Conclusion = 3
+	// Skipped (e.g. a conditional that evaluated false).
+	Conclusion_RUN_CONCLUSION_SKIPPED Conclusion = 4
+	// Exceeded its time limit.
+	Conclusion_RUN_CONCLUSION_TIMED_OUT Conclusion = 5
+	// Requires manual intervention to proceed.
+	Conclusion_RUN_CONCLUSION_ACTION_REQUIRED Conclusion = 6
+	// Completed without a positive or negative result.
+	Conclusion_RUN_CONCLUSION_NEUTRAL Conclusion = 7
+	// Superseded by a newer run before completing.
+	Conclusion_RUN_CONCLUSION_STALE Conclusion = 8
+)
+
+// Enum value maps for Conclusion.
+var (
+	Conclusion_name = map[int32]string{
+		0: "RUN_CONCLUSION_UNSPECIFIED",
+		1: "RUN_CONCLUSION_SUCCESS",
+		2: "RUN_CONCLUSION_FAILURE",
+		3: "RUN_CONCLUSION_CANCELLED",
+		4: "RUN_CONCLUSION_SKIPPED",
+		5: "RUN_CONCLUSION_TIMED_OUT",
+		6: "RUN_CONCLUSION_ACTION_REQUIRED",
+		7: "RUN_CONCLUSION_NEUTRAL",
+		8: "RUN_CONCLUSION_STALE",
+	}
+	Conclusion_value = map[string]int32{
+		"RUN_CONCLUSION_UNSPECIFIED":     0,
+		"RUN_CONCLUSION_SUCCESS":         1,
+		"RUN_CONCLUSION_FAILURE":         2,
+		"RUN_CONCLUSION_CANCELLED":       3,
+		"RUN_CONCLUSION_SKIPPED":         4,
+		"RUN_CONCLUSION_TIMED_OUT":       5,
+		"RUN_CONCLUSION_ACTION_REQUIRED": 6,
+		"RUN_CONCLUSION_NEUTRAL":         7,
+		"RUN_CONCLUSION_STALE":           8,
+	}
+)
+
+func (x Conclusion) Enum() *Conclusion {
+	p := new(Conclusion)
+	*p = x
+	return p
+}
+
+func (x Conclusion) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Conclusion) Descriptor() protoreflect.EnumDescriptor {
+	return file_carabiner_core_v1_events_proto_enumTypes[1].Descriptor()
+}
+
+func (Conclusion) Type() protoreflect.EnumType {
+	return &file_carabiner_core_v1_events_proto_enumTypes[1]
+}
+
+func (x Conclusion) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Conclusion.Descriptor instead.
+func (Conclusion) EnumDescriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{1}
+}
+
+// PipelineRun captures a single execution of a pipeline (e.g. a GitHub Actions
+// workflow run). Its status and conclusion are updated as the run progresses.
 type PipelineRun struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          EventType              `protobuf:"varint,1,opt,name=type,proto3,enum=carabiner.core.v1.EventType" json:"type,omitempty"`
-	Pipeline      *Pipeline              `protobuf:"bytes,2,opt,name=pipeline,proto3" json:"pipeline,omitempty"`
-	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Payload       *structpb.Struct       `protobuf:"bytes,5,opt,name=payload,proto3" json:"payload,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Carabiner-assigned unique identifier.
+	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	// The pipeline that was run.
+	Pipeline *Pipeline `protobuf:"bytes,2,opt,name=pipeline,proto3" json:"pipeline,omitempty"`
+	// external_id is the run's stable identifier in its source system (e.g. a
+	// GitHub workflow run ID). The idempotency/lookup key for the run.
+	ExternalId string `protobuf:"bytes,3,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	// run_number is the source system's human-facing sequence number for the
+	// run within its pipeline.
+	RunNumber uint64 `protobuf:"varint,4,opt,name=run_number,json=runNumber,proto3" json:"run_number,omitempty"`
+	// run_attempt is the attempt counter for re-runs of the same run (starts at 1).
+	RunAttempt uint32 `protobuf:"varint,5,opt,name=run_attempt,json=runAttempt,proto3" json:"run_attempt,omitempty"`
+	// status is the run's current execution status.
+	Status RunStatus `protobuf:"varint,6,opt,name=status,proto3,enum=carabiner.core.v1.RunStatus" json:"status,omitempty"`
+	// conclusion is the run's outcome once completed.
+	Conclusion Conclusion `protobuf:"varint,7,opt,name=conclusion,proto3,enum=carabiner.core.v1.Conclusion" json:"conclusion,omitempty"`
+	// head_sha is the commit the run executed against.
+	HeadSha string `protobuf:"bytes,8,opt,name=head_sha,json=headSha,proto3" json:"head_sha,omitempty"`
+	// head_branch is the branch (or ref) the run executed against.
+	HeadBranch string `protobuf:"bytes,9,opt,name=head_branch,json=headBranch,proto3" json:"head_branch,omitempty"`
+	// event is the source-system event that triggered the run, e.g. "push",
+	// "pull_request" or "schedule".
+	Event string `protobuf:"bytes,10,opt,name=event,proto3" json:"event,omitempty"`
+	// actor is the identity that triggered the run (e.g. a username).
+	Actor string `protobuf:"bytes,11,opt,name=actor,proto3" json:"actor,omitempty"`
+	// url is the run's web URL in the source system.
+	Url string `protobuf:"bytes,12,opt,name=url,proto3" json:"url,omitempty"`
+	// created_at is when the run was created/queued.
+	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// started_at is when the run began executing.
+	StartedAt *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	// completed_at is when the run finished.
+	CompletedAt   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -122,11 +235,11 @@ func (*PipelineRun) Descriptor() ([]byte, []int) {
 	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *PipelineRun) GetType() EventType {
+func (x *PipelineRun) GetID() string {
 	if x != nil {
-		return x.Type
+		return x.ID
 	}
-	return EventType_ETYPE_UNKONWN
+	return ""
 }
 
 func (x *PipelineRun) GetPipeline() *Pipeline {
@@ -136,42 +249,255 @@ func (x *PipelineRun) GetPipeline() *Pipeline {
 	return nil
 }
 
-func (x *PipelineRun) GetName() string {
+func (x *PipelineRun) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
+	}
+	return ""
+}
+
+func (x *PipelineRun) GetRunNumber() uint64 {
+	if x != nil {
+		return x.RunNumber
+	}
+	return 0
+}
+
+func (x *PipelineRun) GetRunAttempt() uint32 {
+	if x != nil {
+		return x.RunAttempt
+	}
+	return 0
+}
+
+func (x *PipelineRun) GetStatus() RunStatus {
+	if x != nil {
+		return x.Status
+	}
+	return RunStatus_RUN_STATUS_UNSPECIFIED
+}
+
+func (x *PipelineRun) GetConclusion() Conclusion {
+	if x != nil {
+		return x.Conclusion
+	}
+	return Conclusion_RUN_CONCLUSION_UNSPECIFIED
+}
+
+func (x *PipelineRun) GetHeadSha() string {
+	if x != nil {
+		return x.HeadSha
+	}
+	return ""
+}
+
+func (x *PipelineRun) GetHeadBranch() string {
+	if x != nil {
+		return x.HeadBranch
+	}
+	return ""
+}
+
+func (x *PipelineRun) GetEvent() string {
+	if x != nil {
+		return x.Event
+	}
+	return ""
+}
+
+func (x *PipelineRun) GetActor() string {
+	if x != nil {
+		return x.Actor
+	}
+	return ""
+}
+
+func (x *PipelineRun) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *PipelineRun) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *PipelineRun) GetStartedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartedAt
+	}
+	return nil
+}
+
+func (x *PipelineRun) GetCompletedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CompletedAt
+	}
+	return nil
+}
+
+// JobRun captures a single execution of a job within a pipeline run.
+type JobRun struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Carabiner-assigned unique identifier.
+	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	// The declared job this run corresponds to, when known.
+	Job *Job `protobuf:"bytes,2,opt,name=job,proto3" json:"job,omitempty"`
+	// The pipeline run this job run belongs to.
+	PipelineRun *PipelineRun `protobuf:"bytes,3,opt,name=pipeline_run,json=pipelineRun,proto3" json:"pipeline_run,omitempty"`
+	// external_id is the job run's stable identifier in its source system (e.g.
+	// a GitHub job ID).
+	ExternalId string `protobuf:"bytes,4,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	// name is the job run's display name (may differ per run, e.g. matrix
+	// expansions like "build (ubuntu-latest)").
+	Name string `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
+	// status is the job run's current execution status.
+	Status RunStatus `protobuf:"varint,6,opt,name=status,proto3,enum=carabiner.core.v1.RunStatus" json:"status,omitempty"`
+	// conclusion is the job run's outcome once completed.
+	Conclusion Conclusion `protobuf:"varint,7,opt,name=conclusion,proto3,enum=carabiner.core.v1.Conclusion" json:"conclusion,omitempty"`
+	// url is the job run's web URL in the source system.
+	Url string `protobuf:"bytes,8,opt,name=url,proto3" json:"url,omitempty"`
+	// started_at is when the job began executing.
+	StartedAt *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	// completed_at is when the job finished.
+	CompletedAt   *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *JobRun) Reset() {
+	*x = JobRun{}
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JobRun) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JobRun) ProtoMessage() {}
+
+func (x *JobRun) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JobRun.ProtoReflect.Descriptor instead.
+func (*JobRun) Descriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *JobRun) GetID() string {
+	if x != nil {
+		return x.ID
+	}
+	return ""
+}
+
+func (x *JobRun) GetJob() *Job {
+	if x != nil {
+		return x.Job
+	}
+	return nil
+}
+
+func (x *JobRun) GetPipelineRun() *PipelineRun {
+	if x != nil {
+		return x.PipelineRun
+	}
+	return nil
+}
+
+func (x *JobRun) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
+	}
+	return ""
+}
+
+func (x *JobRun) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-func (x *PipelineRun) GetTimestamp() *timestamppb.Timestamp {
+func (x *JobRun) GetStatus() RunStatus {
 	if x != nil {
-		return x.Timestamp
+		return x.Status
+	}
+	return RunStatus_RUN_STATUS_UNSPECIFIED
+}
+
+func (x *JobRun) GetConclusion() Conclusion {
+	if x != nil {
+		return x.Conclusion
+	}
+	return Conclusion_RUN_CONCLUSION_UNSPECIFIED
+}
+
+func (x *JobRun) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *JobRun) GetStartedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartedAt
 	}
 	return nil
 }
 
-func (x *PipelineRun) GetPayload() *structpb.Struct {
+func (x *JobRun) GetCompletedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.Payload
+		return x.CompletedAt
 	}
 	return nil
 }
 
-// StepRun captures the information of a step execution
+// StepRun captures a single execution of a step within a job run. The first
+// step run with RUN_CONCLUSION_FAILURE pinpoints where a job failed.
 type StepRun struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          EventType              `protobuf:"varint,1,opt,name=type,proto3,enum=carabiner.core.v1.EventType" json:"type,omitempty"`
-	Step          *Step                  `protobuf:"bytes,2,opt,name=step,proto3" json:"step,omitempty"`
-	PipelineRun   *PipelineRun           `protobuf:"bytes,3,opt,name=pipeline_run,json=pipelineRun,proto3" json:"pipeline_run,omitempty"`
-	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Payload       *structpb.Struct       `protobuf:"bytes,5,opt,name=payload,proto3" json:"payload,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Carabiner-assigned unique identifier.
+	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	// The declared step this run corresponds to, when known.
+	Step *Step `protobuf:"bytes,2,opt,name=step,proto3" json:"step,omitempty"`
+	// The job run this step run belongs to.
+	JobRun *JobRun `protobuf:"bytes,3,opt,name=job_run,json=jobRun,proto3" json:"job_run,omitempty"`
+	// name is the step run's display name.
+	Name string `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	// number is the step's 1-based position within its job.
+	Number uint32 `protobuf:"varint,5,opt,name=number,proto3" json:"number,omitempty"`
+	// status is the step run's current execution status.
+	Status RunStatus `protobuf:"varint,6,opt,name=status,proto3,enum=carabiner.core.v1.RunStatus" json:"status,omitempty"`
+	// conclusion is the step run's outcome once completed.
+	Conclusion Conclusion `protobuf:"varint,7,opt,name=conclusion,proto3,enum=carabiner.core.v1.Conclusion" json:"conclusion,omitempty"`
+	// started_at is when the step began executing.
+	StartedAt *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	// completed_at is when the step finished.
+	CompletedAt   *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *StepRun) Reset() {
 	*x = StepRun{}
-	mi := &file_carabiner_core_v1_events_proto_msgTypes[1]
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -183,7 +509,7 @@ func (x *StepRun) String() string {
 func (*StepRun) ProtoMessage() {}
 
 func (x *StepRun) ProtoReflect() protoreflect.Message {
-	mi := &file_carabiner_core_v1_events_proto_msgTypes[1]
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -196,14 +522,14 @@ func (x *StepRun) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StepRun.ProtoReflect.Descriptor instead.
 func (*StepRun) Descriptor() ([]byte, []int) {
-	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{1}
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *StepRun) GetType() EventType {
+func (x *StepRun) GetID() string {
 	if x != nil {
-		return x.Type
+		return x.ID
 	}
-	return EventType_ETYPE_UNKONWN
+	return ""
 }
 
 func (x *StepRun) GetStep() *Step {
@@ -213,68 +539,130 @@ func (x *StepRun) GetStep() *Step {
 	return nil
 }
 
-func (x *StepRun) GetPipelineRun() *PipelineRun {
+func (x *StepRun) GetJobRun() *JobRun {
 	if x != nil {
-		return x.PipelineRun
+		return x.JobRun
 	}
 	return nil
 }
 
-func (x *StepRun) GetTimestamp() *timestamppb.Timestamp {
+func (x *StepRun) GetName() string {
 	if x != nil {
-		return x.Timestamp
+		return x.Name
+	}
+	return ""
+}
+
+func (x *StepRun) GetNumber() uint32 {
+	if x != nil {
+		return x.Number
+	}
+	return 0
+}
+
+func (x *StepRun) GetStatus() RunStatus {
+	if x != nil {
+		return x.Status
+	}
+	return RunStatus_RUN_STATUS_UNSPECIFIED
+}
+
+func (x *StepRun) GetConclusion() Conclusion {
+	if x != nil {
+		return x.Conclusion
+	}
+	return Conclusion_RUN_CONCLUSION_UNSPECIFIED
+}
+
+func (x *StepRun) GetStartedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartedAt
 	}
 	return nil
 }
 
-func (x *StepRun) GetPayload() *structpb.Struct {
+func (x *StepRun) GetCompletedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.Payload
+		return x.CompletedAt
 	}
 	return nil
 }
-
-var file_carabiner_core_v1_events_proto_extTypes = []protoimpl.ExtensionInfo{
-	{
-		ExtendedType:  (*descriptorpb.EnumValueOptions)(nil),
-		ExtensionType: (*string)(nil),
-		Field:         42445,
-		Name:          "carabiner.core.v1.name",
-		Tag:           "bytes,42445,opt,name=name",
-		Filename:      "carabiner/core/v1/events.proto",
-	},
-}
-
-// Extension fields to descriptorpb.EnumValueOptions.
-var (
-	// optional string name = 42445;
-	E_Name = &file_carabiner_core_v1_events_proto_extTypes[0]
-)
 
 var File_carabiner_core_v1_events_proto protoreflect.FileDescriptor
 
 const file_carabiner_core_v1_events_proto_rawDesc = "" +
 	"\n" +
-	"\x1ecarabiner/core/v1/events.proto\x12\x11carabiner.core.v1\x1a\x1fcarabiner/core/v1/objects.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a google/protobuf/descriptor.proto\"\x95\x02\n" +
-	"\vPipelineRun\x120\n" +
-	"\x04type\x18\x01 \x01(\x0e2\x1c.carabiner.core.v1.EventTypeR\x04type\x127\n" +
-	"\bpipeline\x18\x02 \x01(\v2\x1b.carabiner.core.v1.PipelineR\bpipeline\x12.\n" +
-	"\x04name\x18\x03 \x01(\tB\x1a\xbaH\x17r\x15\x18\xc8\x012\x10^[-_a-zA-Z0-9]+$R\x04name\x128\n" +
-	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x121\n" +
-	"\apayload\x18\x05 \x01(\v2\x17.google.protobuf.StructR\apayload\"\x98\x02\n" +
-	"\aStepRun\x120\n" +
-	"\x04type\x18\x01 \x01(\x0e2\x1c.carabiner.core.v1.EventTypeR\x04type\x12+\n" +
-	"\x04step\x18\x02 \x01(\v2\x17.carabiner.core.v1.StepR\x04step\x12A\n" +
-	"\fpipeline_run\x18\x03 \x01(\v2\x1e.carabiner.core.v1.PipelineRunR\vpipelineRun\x128\n" +
-	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x121\n" +
-	"\apayload\x18\x05 \x01(\v2\x17.google.protobuf.StructR\apayload*~\n" +
-	"\tEventType\x12\x11\n" +
-	"\rETYPE_UNKONWN\x10\x00\x12\x1e\n" +
-	"\rETYPE_STARTED\x10\x01\x1a\v\xea\xdc\x14\astarted\x12 \n" +
-	"\x0eETYPE_FINISHED\x10\x02\x1a\f\xea\xdc\x14\bfinished\x12\x1c\n" +
-	"\fETYPE_QUEUED\x10\x03\x1a\n" +
-	"\xea\xdc\x14\x06queued::\n" +
-	"\x04name\x12!.google.protobuf.EnumValueOptions\x18\xcd\xcb\x02 \x01(\tR\x04name\x88\x01\x01B\xc4\x01\n" +
+	"\x1ecarabiner/core/v1/events.proto\x12\x11carabiner.core.v1\x1a\x1fcarabiner/core/v1/objects.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bbuf/validate/validate.proto\"\xe5\x04\n" +
+	"\vPipelineRun\x12\x18\n" +
+	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x127\n" +
+	"\bpipeline\x18\x02 \x01(\v2\x1b.carabiner.core.v1.PipelineR\bpipeline\x12\x1f\n" +
+	"\vexternal_id\x18\x03 \x01(\tR\n" +
+	"externalId\x12\x1d\n" +
+	"\n" +
+	"run_number\x18\x04 \x01(\x04R\trunNumber\x12\x1f\n" +
+	"\vrun_attempt\x18\x05 \x01(\rR\n" +
+	"runAttempt\x124\n" +
+	"\x06status\x18\x06 \x01(\x0e2\x1c.carabiner.core.v1.RunStatusR\x06status\x12=\n" +
+	"\n" +
+	"conclusion\x18\a \x01(\x0e2\x1d.carabiner.core.v1.ConclusionR\n" +
+	"conclusion\x12\x19\n" +
+	"\bhead_sha\x18\b \x01(\tR\aheadSha\x12\x1f\n" +
+	"\vhead_branch\x18\t \x01(\tR\n" +
+	"headBranch\x12\x14\n" +
+	"\x05event\x18\n" +
+	" \x01(\tR\x05event\x12\x14\n" +
+	"\x05actor\x18\v \x01(\tR\x05actor\x12\x10\n" +
+	"\x03url\x18\f \x01(\tR\x03url\x129\n" +
+	"\n" +
+	"created_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"started_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12=\n" +
+	"\fcompleted_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\"\xcf\x03\n" +
+	"\x06JobRun\x12\x18\n" +
+	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12(\n" +
+	"\x03job\x18\x02 \x01(\v2\x16.carabiner.core.v1.JobR\x03job\x12A\n" +
+	"\fpipeline_run\x18\x03 \x01(\v2\x1e.carabiner.core.v1.PipelineRunR\vpipelineRun\x12\x1f\n" +
+	"\vexternal_id\x18\x04 \x01(\tR\n" +
+	"externalId\x12\x1c\n" +
+	"\x04name\x18\x05 \x01(\tB\b\xbaH\x05r\x03\x18\xff\x01R\x04name\x124\n" +
+	"\x06status\x18\x06 \x01(\x0e2\x1c.carabiner.core.v1.RunStatusR\x06status\x12=\n" +
+	"\n" +
+	"conclusion\x18\a \x01(\x0e2\x1d.carabiner.core.v1.ConclusionR\n" +
+	"conclusion\x12\x10\n" +
+	"\x03url\x18\b \x01(\tR\x03url\x129\n" +
+	"\n" +
+	"started_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12=\n" +
+	"\fcompleted_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\"\xa9\x03\n" +
+	"\aStepRun\x12\x18\n" +
+	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12+\n" +
+	"\x04step\x18\x02 \x01(\v2\x17.carabiner.core.v1.StepR\x04step\x122\n" +
+	"\ajob_run\x18\x03 \x01(\v2\x19.carabiner.core.v1.JobRunR\x06jobRun\x12\x1c\n" +
+	"\x04name\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xff\x01R\x04name\x12\x16\n" +
+	"\x06number\x18\x05 \x01(\rR\x06number\x124\n" +
+	"\x06status\x18\x06 \x01(\x0e2\x1c.carabiner.core.v1.RunStatusR\x06status\x12=\n" +
+	"\n" +
+	"conclusion\x18\a \x01(\x0e2\x1d.carabiner.core.v1.ConclusionR\n" +
+	"conclusion\x129\n" +
+	"\n" +
+	"started_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12=\n" +
+	"\fcompleted_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt*t\n" +
+	"\tRunStatus\x12\x1a\n" +
+	"\x16RUN_STATUS_UNSPECIFIED\x10\x00\x12\x15\n" +
+	"\x11RUN_STATUS_QUEUED\x10\x01\x12\x1a\n" +
+	"\x16RUN_STATUS_IN_PROGRESS\x10\x02\x12\x18\n" +
+	"\x14RUN_STATUS_COMPLETED\x10\x03*\x96\x02\n" +
+	"\n" +
+	"Conclusion\x12\x1e\n" +
+	"\x1aRUN_CONCLUSION_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x16RUN_CONCLUSION_SUCCESS\x10\x01\x12\x1a\n" +
+	"\x16RUN_CONCLUSION_FAILURE\x10\x02\x12\x1c\n" +
+	"\x18RUN_CONCLUSION_CANCELLED\x10\x03\x12\x1a\n" +
+	"\x16RUN_CONCLUSION_SKIPPED\x10\x04\x12\x1c\n" +
+	"\x18RUN_CONCLUSION_TIMED_OUT\x10\x05\x12\"\n" +
+	"\x1eRUN_CONCLUSION_ACTION_REQUIRED\x10\x06\x12\x1a\n" +
+	"\x16RUN_CONCLUSION_NEUTRAL\x10\a\x12\x18\n" +
+	"\x14RUN_CONCLUSION_STALE\x10\bB\xc4\x01\n" +
 	"\x15com.carabiner.core.v1B\vEventsProtoP\x01Z8github.com/carabiner-dev/core/api/carabiner/core/v1;core\xa2\x02\x03CCX\xaa\x02\x11Carabiner.Core.V1\xca\x02\x11Carabiner\\Core\\V1\xe2\x02\x1dCarabiner\\Core\\V1\\GPBMetadata\xea\x02\x13Carabiner::Core::V1b\x06proto3"
 
 var (
@@ -289,34 +677,43 @@ func file_carabiner_core_v1_events_proto_rawDescGZIP() []byte {
 	return file_carabiner_core_v1_events_proto_rawDescData
 }
 
-var file_carabiner_core_v1_events_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_carabiner_core_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_carabiner_core_v1_events_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_carabiner_core_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_carabiner_core_v1_events_proto_goTypes = []any{
-	(EventType)(0),                        // 0: carabiner.core.v1.EventType
-	(*PipelineRun)(nil),                   // 1: carabiner.core.v1.PipelineRun
-	(*StepRun)(nil),                       // 2: carabiner.core.v1.StepRun
-	(*Pipeline)(nil),                      // 3: carabiner.core.v1.Pipeline
-	(*timestamppb.Timestamp)(nil),         // 4: google.protobuf.Timestamp
-	(*structpb.Struct)(nil),               // 5: google.protobuf.Struct
-	(*Step)(nil),                          // 6: carabiner.core.v1.Step
-	(*descriptorpb.EnumValueOptions)(nil), // 7: google.protobuf.EnumValueOptions
+	(RunStatus)(0),                // 0: carabiner.core.v1.RunStatus
+	(Conclusion)(0),               // 1: carabiner.core.v1.Conclusion
+	(*PipelineRun)(nil),           // 2: carabiner.core.v1.PipelineRun
+	(*JobRun)(nil),                // 3: carabiner.core.v1.JobRun
+	(*StepRun)(nil),               // 4: carabiner.core.v1.StepRun
+	(*Pipeline)(nil),              // 5: carabiner.core.v1.Pipeline
+	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
+	(*Job)(nil),                   // 7: carabiner.core.v1.Job
+	(*Step)(nil),                  // 8: carabiner.core.v1.Step
 }
 var file_carabiner_core_v1_events_proto_depIdxs = []int32{
-	0,  // 0: carabiner.core.v1.PipelineRun.type:type_name -> carabiner.core.v1.EventType
-	3,  // 1: carabiner.core.v1.PipelineRun.pipeline:type_name -> carabiner.core.v1.Pipeline
-	4,  // 2: carabiner.core.v1.PipelineRun.timestamp:type_name -> google.protobuf.Timestamp
-	5,  // 3: carabiner.core.v1.PipelineRun.payload:type_name -> google.protobuf.Struct
-	0,  // 4: carabiner.core.v1.StepRun.type:type_name -> carabiner.core.v1.EventType
-	6,  // 5: carabiner.core.v1.StepRun.step:type_name -> carabiner.core.v1.Step
-	1,  // 6: carabiner.core.v1.StepRun.pipeline_run:type_name -> carabiner.core.v1.PipelineRun
-	4,  // 7: carabiner.core.v1.StepRun.timestamp:type_name -> google.protobuf.Timestamp
-	5,  // 8: carabiner.core.v1.StepRun.payload:type_name -> google.protobuf.Struct
-	7,  // 9: carabiner.core.v1.name:extendee -> google.protobuf.EnumValueOptions
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	9,  // [9:10] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	5,  // 0: carabiner.core.v1.PipelineRun.pipeline:type_name -> carabiner.core.v1.Pipeline
+	0,  // 1: carabiner.core.v1.PipelineRun.status:type_name -> carabiner.core.v1.RunStatus
+	1,  // 2: carabiner.core.v1.PipelineRun.conclusion:type_name -> carabiner.core.v1.Conclusion
+	6,  // 3: carabiner.core.v1.PipelineRun.created_at:type_name -> google.protobuf.Timestamp
+	6,  // 4: carabiner.core.v1.PipelineRun.started_at:type_name -> google.protobuf.Timestamp
+	6,  // 5: carabiner.core.v1.PipelineRun.completed_at:type_name -> google.protobuf.Timestamp
+	7,  // 6: carabiner.core.v1.JobRun.job:type_name -> carabiner.core.v1.Job
+	2,  // 7: carabiner.core.v1.JobRun.pipeline_run:type_name -> carabiner.core.v1.PipelineRun
+	0,  // 8: carabiner.core.v1.JobRun.status:type_name -> carabiner.core.v1.RunStatus
+	1,  // 9: carabiner.core.v1.JobRun.conclusion:type_name -> carabiner.core.v1.Conclusion
+	6,  // 10: carabiner.core.v1.JobRun.started_at:type_name -> google.protobuf.Timestamp
+	6,  // 11: carabiner.core.v1.JobRun.completed_at:type_name -> google.protobuf.Timestamp
+	8,  // 12: carabiner.core.v1.StepRun.step:type_name -> carabiner.core.v1.Step
+	3,  // 13: carabiner.core.v1.StepRun.job_run:type_name -> carabiner.core.v1.JobRun
+	0,  // 14: carabiner.core.v1.StepRun.status:type_name -> carabiner.core.v1.RunStatus
+	1,  // 15: carabiner.core.v1.StepRun.conclusion:type_name -> carabiner.core.v1.Conclusion
+	6,  // 16: carabiner.core.v1.StepRun.started_at:type_name -> google.protobuf.Timestamp
+	6,  // 17: carabiner.core.v1.StepRun.completed_at:type_name -> google.protobuf.Timestamp
+	18, // [18:18] is the sub-list for method output_type
+	18, // [18:18] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_carabiner_core_v1_events_proto_init() }
@@ -330,16 +727,15 @@ func file_carabiner_core_v1_events_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_carabiner_core_v1_events_proto_rawDesc), len(file_carabiner_core_v1_events_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   2,
-			NumExtensions: 1,
+			NumEnums:      2,
+			NumMessages:   3,
+			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_carabiner_core_v1_events_proto_goTypes,
 		DependencyIndexes: file_carabiner_core_v1_events_proto_depIdxs,
 		EnumInfos:         file_carabiner_core_v1_events_proto_enumTypes,
 		MessageInfos:      file_carabiner_core_v1_events_proto_msgTypes,
-		ExtensionInfos:    file_carabiner_core_v1_events_proto_extTypes,
 	}.Build()
 	File_carabiner_core_v1_events_proto = out.File
 	file_carabiner_core_v1_events_proto_goTypes = nil

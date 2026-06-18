@@ -7,41 +7,171 @@ package carabiner.core.v1;
 import "carabiner/core/v1/objects.proto";
 import "google/protobuf/timestamp.proto";
 import "buf/validate/validate.proto";
-import "google/protobuf/struct.proto";
-import "google/protobuf/descriptor.proto";
 
 option go_package = "github.com/carabiner-dev/core/api/carabiner/core/v1;core";
 
-enum EventType {
-    ETYPE_UNKONWN  = 0;
-    ETYPE_STARTED  = 1 [(name) = "started"];
-    ETYPE_FINISHED = 2 [(name) = "finished"];
-    ETYPE_QUEUED   = 3 [(name) = "queued"];
+// RunStatus is the execution status of a pipeline, job or step run. It tracks
+// progress; the final outcome is reported separately by Conclusion once the run
+// reaches RUN_STATUS_COMPLETED.
+enum RunStatus {
+	// Unknown / not reported.
+	RUN_STATUS_UNSPECIFIED = 0;
+	// Accepted by the system but not yet started (queued/waiting/pending).
+	RUN_STATUS_QUEUED = 1;
+	// Currently executing.
+	RUN_STATUS_IN_PROGRESS = 2;
+	// Finished executing; see Conclusion for the outcome.
+	RUN_STATUS_COMPLETED = 3;
 }
 
-extend google.protobuf.EnumValueOptions {
-    optional string name = 42445;
+// Conclusion is the outcome of a completed run. It is meaningful only once a run
+// reaches RUN_STATUS_COMPLETED; while in progress it is
+// RUN_CONCLUSION_UNSPECIFIED.
+enum Conclusion {
+	// Not yet concluded (still running) or not reported.
+	RUN_CONCLUSION_UNSPECIFIED = 0;
+	// Completed successfully.
+	RUN_CONCLUSION_SUCCESS = 1;
+	// Completed with a failure.
+	RUN_CONCLUSION_FAILURE = 2;
+	// Cancelled before completing.
+	RUN_CONCLUSION_CANCELLED = 3;
+	// Skipped (e.g. a conditional that evaluated false).
+	RUN_CONCLUSION_SKIPPED = 4;
+	// Exceeded its time limit.
+	RUN_CONCLUSION_TIMED_OUT = 5;
+	// Requires manual intervention to proceed.
+	RUN_CONCLUSION_ACTION_REQUIRED = 6;
+	// Completed without a positive or negative result.
+	RUN_CONCLUSION_NEUTRAL = 7;
+	// Superseded by a newer run before completing.
+	RUN_CONCLUSION_STALE = 8;
 }
 
-// PipelineRun is captures the data of a pipeline execution
+// PipelineRun captures a single execution of a pipeline (e.g. a GitHub Actions
+// workflow run). Its status and conclusion are updated as the run progresses.
 message PipelineRun  {
-    EventType type = 1;
-    Pipeline pipeline = 2;
-	string name = 3 [
-        (buf.validate.field).string = {
-            pattern: "^[-_a-zA-Z0-9]+$",
-            max_len: 200,
-        }
-    ];
-    google.protobuf.Timestamp timestamp = 4;
-    google.protobuf.Struct payload = 5;
+	// Carabiner-assigned unique identifier.
+	string ID = 1 [
+		(buf.validate.field).string = {uuid: true}
+	];
+
+	// The pipeline that was run.
+	Pipeline pipeline = 2;
+
+	// external_id is the run's stable identifier in its source system (e.g. a
+	// GitHub workflow run ID). The idempotency/lookup key for the run.
+	string external_id = 3;
+
+	// run_number is the source system's human-facing sequence number for the
+	// run within its pipeline.
+	uint64 run_number = 4;
+
+	// run_attempt is the attempt counter for re-runs of the same run (starts at 1).
+	uint32 run_attempt = 5;
+
+	// status is the run's current execution status.
+	RunStatus status = 6;
+
+	// conclusion is the run's outcome once completed.
+	Conclusion conclusion = 7;
+
+	// head_sha is the commit the run executed against.
+	string head_sha = 8;
+
+	// head_branch is the branch (or ref) the run executed against.
+	string head_branch = 9;
+
+	// event is the source-system event that triggered the run, e.g. "push",
+	// "pull_request" or "schedule".
+	string event = 10;
+
+	// actor is the identity that triggered the run (e.g. a username).
+	string actor = 11;
+
+	// url is the run's web URL in the source system.
+	string url = 12;
+
+	// created_at is when the run was created/queued.
+	google.protobuf.Timestamp created_at = 13;
+
+	// started_at is when the run began executing.
+	google.protobuf.Timestamp started_at = 14;
+
+	// completed_at is when the run finished.
+	google.protobuf.Timestamp completed_at = 15;
 }
 
-// StepRun captures the information of a step execution
+// JobRun captures a single execution of a job within a pipeline run.
+message JobRun {
+	// Carabiner-assigned unique identifier.
+	string ID = 1 [
+		(buf.validate.field).string = {uuid: true}
+	];
+
+	// The declared job this run corresponds to, when known.
+	Job job = 2;
+
+	// The pipeline run this job run belongs to.
+	PipelineRun pipeline_run = 3;
+
+	// external_id is the job run's stable identifier in its source system (e.g.
+	// a GitHub job ID).
+	string external_id = 4;
+
+	// name is the job run's display name (may differ per run, e.g. matrix
+	// expansions like "build (ubuntu-latest)").
+	string name = 5 [
+		(buf.validate.field).string = {max_len: 255}
+	];
+
+	// status is the job run's current execution status.
+	RunStatus status = 6;
+
+	// conclusion is the job run's outcome once completed.
+	Conclusion conclusion = 7;
+
+	// url is the job run's web URL in the source system.
+	string url = 8;
+
+	// started_at is when the job began executing.
+	google.protobuf.Timestamp started_at = 9;
+
+	// completed_at is when the job finished.
+	google.protobuf.Timestamp completed_at = 10;
+}
+
+// StepRun captures a single execution of a step within a job run. The first
+// step run with RUN_CONCLUSION_FAILURE pinpoints where a job failed.
 message StepRun {
-    EventType type = 1;
+	// Carabiner-assigned unique identifier.
+	string ID = 1 [
+		(buf.validate.field).string = {uuid: true}
+	];
+
+	// The declared step this run corresponds to, when known.
 	Step step = 2;
-    PipelineRun pipeline_run = 3;
-    google.protobuf.Timestamp timestamp = 4;
-    google.protobuf.Struct payload = 5;
+
+	// The job run this step run belongs to.
+	JobRun job_run = 3;
+
+	// name is the step run's display name.
+	string name = 4 [
+		(buf.validate.field).string = {max_len: 255}
+	];
+
+	// number is the step's 1-based position within its job.
+	uint32 number = 5;
+
+	// status is the step run's current execution status.
+	RunStatus status = 6;
+
+	// conclusion is the step run's outcome once completed.
+	Conclusion conclusion = 7;
+
+	// started_at is when the step began executing.
+	google.protobuf.Timestamp started_at = 8;
+
+	// completed_at is when the step finished.
+	google.protobuf.Timestamp completed_at = 9;
 }

@@ -78,6 +78,67 @@ func (Status) EnumDescriptor() ([]byte, []int) {
 	return file_carabiner_core_v1_objects_proto_rawDescGZIP(), []int{0}
 }
 
+// PipelineState is the lifecycle state of a pipeline (workflow) in its source
+// system. Pipelines are soft-deleted (marked PIPELINE_STATE_DELETED) rather
+// than removed so historical runs that reference them remain viewable.
+type PipelineState int32
+
+const (
+	// Unspecified; treated as active for records written before the field existed.
+	PipelineState_PIPELINE_STATE_UNSPECIFIED PipelineState = 0
+	// The pipeline currently exists and is enabled in the source system.
+	PipelineState_PIPELINE_STATE_ACTIVE PipelineState = 1
+	// The pipeline exists but is disabled in the source system (e.g. a GitHub
+	// workflow disabled manually or for inactivity).
+	PipelineState_PIPELINE_STATE_DISABLED PipelineState = 2
+	// The pipeline no longer exists in the source system; kept for historical
+	// runs (soft delete).
+	PipelineState_PIPELINE_STATE_DELETED PipelineState = 3
+)
+
+// Enum value maps for PipelineState.
+var (
+	PipelineState_name = map[int32]string{
+		0: "PIPELINE_STATE_UNSPECIFIED",
+		1: "PIPELINE_STATE_ACTIVE",
+		2: "PIPELINE_STATE_DISABLED",
+		3: "PIPELINE_STATE_DELETED",
+	}
+	PipelineState_value = map[string]int32{
+		"PIPELINE_STATE_UNSPECIFIED": 0,
+		"PIPELINE_STATE_ACTIVE":      1,
+		"PIPELINE_STATE_DISABLED":    2,
+		"PIPELINE_STATE_DELETED":     3,
+	}
+)
+
+func (x PipelineState) Enum() *PipelineState {
+	p := new(PipelineState)
+	*p = x
+	return p
+}
+
+func (x PipelineState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PipelineState) Descriptor() protoreflect.EnumDescriptor {
+	return file_carabiner_core_v1_objects_proto_enumTypes[1].Descriptor()
+}
+
+func (PipelineState) Type() protoreflect.EnumType {
+	return &file_carabiner_core_v1_objects_proto_enumTypes[1]
+}
+
+func (x PipelineState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PipelineState.Descriptor instead.
+func (PipelineState) EnumDescriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_objects_proto_rawDescGZIP(), []int{1}
+}
+
 // A system abstracts a system capable of handling one or more stages
 // of the SDLC. A CI/CD system, for example, can handle builds
 type System struct {
@@ -341,12 +402,29 @@ func (x *Repository) GetDescription() string {
 	return ""
 }
 
-// Pipeline abstracts a collection of steps
+// Pipeline abstracts an automated workflow declared in a repository (e.g. a
+// GitHub Actions workflow or a GitLab CI pipeline). It is a declared object:
+// it exists as long as its definition lives in the repository, independent of
+// any run. A pipeline contains jobs, which contain steps.
 type Pipeline struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ID            string                 `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Repository    *Repository            `protobuf:"bytes,3,opt,name=repository,proto3" json:"repository,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Carabiner-assigned unique identifier.
+	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	// Human-readable display name as reported by the source system, e.g.
+	// "CI / Build". Free-form (may contain spaces and punctuation).
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// The repository this pipeline is declared in.
+	Repository *Repository `protobuf:"bytes,3,opt,name=repository,proto3" json:"repository,omitempty"`
+	// external_id is the pipeline's stable identifier in its source system
+	// (e.g. a GitHub numeric workflow ID). It is the idempotency/lookup key for
+	// reconciling the repository's pipelines.
+	ExternalId string `protobuf:"bytes,4,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	// path is the pipeline definition's location within the repository, e.g.
+	// ".github/workflows/release.yml".
+	Path string `protobuf:"bytes,5,opt,name=path,proto3" json:"path,omitempty"`
+	// state is the pipeline's lifecycle state in the source system. Removed
+	// pipelines are marked PIPELINE_STATE_DELETED rather than dropped.
+	State         PipelineState `protobuf:"varint,6,opt,name=state,proto3,enum=carabiner.core.v1.PipelineState" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -402,19 +480,136 @@ func (x *Pipeline) GetRepository() *Repository {
 	return nil
 }
 
-// Step is a CI/CD operation part of a pipeline
+func (x *Pipeline) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
+	}
+	return ""
+}
+
+func (x *Pipeline) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *Pipeline) GetState() PipelineState {
+	if x != nil {
+		return x.State
+	}
+	return PipelineState_PIPELINE_STATE_UNSPECIFIED
+}
+
+// Job abstracts a unit of execution within a pipeline that groups steps (e.g. a
+// GitHub Actions job, or a GitLab CI job). It is the intermediate level between
+// a pipeline and its steps. Systems without a job concept may model a single
+// synthetic job; systems with stages (e.g. GitLab) may record the stage name in
+// `stage`.
+type Job struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Carabiner-assigned unique identifier.
+	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	// Human-readable display name as reported by the source system. Free-form.
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// The pipeline this job belongs to.
+	Pipeline *Pipeline `protobuf:"bytes,3,opt,name=pipeline,proto3" json:"pipeline,omitempty"`
+	// external_id is the job's stable identifier in its source system. For a
+	// declared GitHub job this is its key in the workflow file (e.g. "build").
+	ExternalId string `protobuf:"bytes,4,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	// stage is an optional grouping the source system places this job in (e.g. a
+	// GitLab stage). Empty for systems without stages.
+	Stage         string `protobuf:"bytes,5,opt,name=stage,proto3" json:"stage,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Job) Reset() {
+	*x = Job{}
+	mi := &file_carabiner_core_v1_objects_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Job) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Job) ProtoMessage() {}
+
+func (x *Job) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_objects_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Job.ProtoReflect.Descriptor instead.
+func (*Job) Descriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_objects_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *Job) GetID() string {
+	if x != nil {
+		return x.ID
+	}
+	return ""
+}
+
+func (x *Job) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Job) GetPipeline() *Pipeline {
+	if x != nil {
+		return x.Pipeline
+	}
+	return nil
+}
+
+func (x *Job) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
+	}
+	return ""
+}
+
+func (x *Job) GetStage() string {
+	if x != nil {
+		return x.Stage
+	}
+	return ""
+}
+
+// Step is a single operation within a job (e.g. a GitHub Actions step).
 type Step struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ID            string                 `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Pipeline      *Pipeline              `protobuf:"bytes,3,opt,name=pipeline,proto3" json:"pipeline,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Carabiner-assigned unique identifier.
+	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	// Human-readable display name as reported by the source system. Free-form.
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// The job this step belongs to.
+	Job *Job `protobuf:"bytes,3,opt,name=job,proto3" json:"job,omitempty"`
+	// external_id is the step's stable identifier in its source system, when one
+	// exists.
+	ExternalId string `protobuf:"bytes,4,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	// number is the step's 1-based position within its job, used to order steps.
+	Number        uint32 `protobuf:"varint,5,opt,name=number,proto3" json:"number,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Step) Reset() {
 	*x = Step{}
-	mi := &file_carabiner_core_v1_objects_proto_msgTypes[4]
+	mi := &file_carabiner_core_v1_objects_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -426,7 +621,7 @@ func (x *Step) String() string {
 func (*Step) ProtoMessage() {}
 
 func (x *Step) ProtoReflect() protoreflect.Message {
-	mi := &file_carabiner_core_v1_objects_proto_msgTypes[4]
+	mi := &file_carabiner_core_v1_objects_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -439,7 +634,7 @@ func (x *Step) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Step.ProtoReflect.Descriptor instead.
 func (*Step) Descriptor() ([]byte, []int) {
-	return file_carabiner_core_v1_objects_proto_rawDescGZIP(), []int{4}
+	return file_carabiner_core_v1_objects_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Step) GetID() string {
@@ -456,11 +651,25 @@ func (x *Step) GetName() string {
 	return ""
 }
 
-func (x *Step) GetPipeline() *Pipeline {
+func (x *Step) GetJob() *Job {
 	if x != nil {
-		return x.Pipeline
+		return x.Job
 	}
 	return nil
+}
+
+func (x *Step) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
+	}
+	return ""
+}
+
+func (x *Step) GetNumber() uint32 {
+	if x != nil {
+		return x.Number
+	}
+	return 0
 }
 
 var File_carabiner_core_v1_objects_proto protoreflect.FileDescriptor
@@ -491,21 +700,40 @@ const file_carabiner_core_v1_objects_proto_rawDesc = "" +
 	"visibility\x18\a \x01(\tR\n" +
 	"visibility\x12%\n" +
 	"\x0edefault_branch\x18\b \x01(\tR\rdefaultBranch\x12 \n" +
-	"\vdescription\x18\t \x01(\tR\vdescription\"\x93\x01\n" +
+	"\vdescription\x18\t \x01(\tR\vdescription\"\xee\x01\n" +
 	"\bPipeline\x12\x18\n" +
-	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12.\n" +
-	"\x04name\x18\x02 \x01(\tB\x1a\xbaH\x17r\x15\x18\xc8\x012\x10^[-_a-zA-Z0-9]+$R\x04name\x12=\n" +
+	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12\x1c\n" +
+	"\x04name\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xff\x01R\x04name\x12=\n" +
 	"\n" +
 	"repository\x18\x03 \x01(\v2\x1d.carabiner.core.v1.RepositoryR\n" +
-	"repository\"\x89\x01\n" +
+	"repository\x12\x1f\n" +
+	"\vexternal_id\x18\x04 \x01(\tR\n" +
+	"externalId\x12\x12\n" +
+	"\x04path\x18\x05 \x01(\tR\x04path\x126\n" +
+	"\x05state\x18\x06 \x01(\x0e2 .carabiner.core.v1.PipelineStateR\x05state\"\xad\x01\n" +
+	"\x03Job\x12\x18\n" +
+	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12\x1c\n" +
+	"\x04name\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xff\x01R\x04name\x127\n" +
+	"\bpipeline\x18\x03 \x01(\v2\x1b.carabiner.core.v1.PipelineR\bpipeline\x12\x1f\n" +
+	"\vexternal_id\x18\x04 \x01(\tR\n" +
+	"externalId\x12\x14\n" +
+	"\x05stage\x18\x05 \x01(\tR\x05stage\"\xa1\x01\n" +
 	"\x04Step\x12\x18\n" +
-	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12.\n" +
-	"\x04name\x18\x02 \x01(\tB\x1a\xbaH\x17r\x15\x18\xc8\x012\x10^[-_a-zA-Z0-9]+$R\x04name\x127\n" +
-	"\bpipeline\x18\x03 \x01(\v2\x1b.carabiner.core.v1.PipelineR\bpipeline*I\n" +
+	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12\x1c\n" +
+	"\x04name\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xff\x01R\x04name\x12(\n" +
+	"\x03job\x18\x03 \x01(\v2\x16.carabiner.core.v1.JobR\x03job\x12\x1f\n" +
+	"\vexternal_id\x18\x04 \x01(\tR\n" +
+	"externalId\x12\x16\n" +
+	"\x06number\x18\x05 \x01(\rR\x06number*I\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rSTATUS_ACTIVE\x10\x01\x12\x14\n" +
-	"\x10STATUS_SUSPENDED\x10\x02B\xc5\x01\n" +
+	"\x10STATUS_SUSPENDED\x10\x02*\x83\x01\n" +
+	"\rPipelineState\x12\x1e\n" +
+	"\x1aPIPELINE_STATE_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15PIPELINE_STATE_ACTIVE\x10\x01\x12\x1b\n" +
+	"\x17PIPELINE_STATE_DISABLED\x10\x02\x12\x1a\n" +
+	"\x16PIPELINE_STATE_DELETED\x10\x03B\xc5\x01\n" +
 	"\x15com.carabiner.core.v1B\fObjectsProtoP\x01Z8github.com/carabiner-dev/core/api/carabiner/core/v1;core\xa2\x02\x03CCX\xaa\x02\x11Carabiner.Core.V1\xca\x02\x11Carabiner\\Core\\V1\xe2\x02\x1dCarabiner\\Core\\V1\\GPBMetadata\xea\x02\x13Carabiner::Core::V1b\x06proto3"
 
 var (
@@ -520,27 +748,31 @@ func file_carabiner_core_v1_objects_proto_rawDescGZIP() []byte {
 	return file_carabiner_core_v1_objects_proto_rawDescData
 }
 
-var file_carabiner_core_v1_objects_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_carabiner_core_v1_objects_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_carabiner_core_v1_objects_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_carabiner_core_v1_objects_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_carabiner_core_v1_objects_proto_goTypes = []any{
 	(Status)(0),        // 0: carabiner.core.v1.Status
-	(*System)(nil),     // 1: carabiner.core.v1.System
-	(*Namespace)(nil),  // 2: carabiner.core.v1.Namespace
-	(*Repository)(nil), // 3: carabiner.core.v1.Repository
-	(*Pipeline)(nil),   // 4: carabiner.core.v1.Pipeline
-	(*Step)(nil),       // 5: carabiner.core.v1.Step
+	(PipelineState)(0), // 1: carabiner.core.v1.PipelineState
+	(*System)(nil),     // 2: carabiner.core.v1.System
+	(*Namespace)(nil),  // 3: carabiner.core.v1.Namespace
+	(*Repository)(nil), // 4: carabiner.core.v1.Repository
+	(*Pipeline)(nil),   // 5: carabiner.core.v1.Pipeline
+	(*Job)(nil),        // 6: carabiner.core.v1.Job
+	(*Step)(nil),       // 7: carabiner.core.v1.Step
 }
 var file_carabiner_core_v1_objects_proto_depIdxs = []int32{
-	1, // 0: carabiner.core.v1.Namespace.system:type_name -> carabiner.core.v1.System
+	2, // 0: carabiner.core.v1.Namespace.system:type_name -> carabiner.core.v1.System
 	0, // 1: carabiner.core.v1.Namespace.status:type_name -> carabiner.core.v1.Status
-	2, // 2: carabiner.core.v1.Repository.namespace:type_name -> carabiner.core.v1.Namespace
-	3, // 3: carabiner.core.v1.Pipeline.repository:type_name -> carabiner.core.v1.Repository
-	4, // 4: carabiner.core.v1.Step.pipeline:type_name -> carabiner.core.v1.Pipeline
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	3, // 2: carabiner.core.v1.Repository.namespace:type_name -> carabiner.core.v1.Namespace
+	4, // 3: carabiner.core.v1.Pipeline.repository:type_name -> carabiner.core.v1.Repository
+	1, // 4: carabiner.core.v1.Pipeline.state:type_name -> carabiner.core.v1.PipelineState
+	5, // 5: carabiner.core.v1.Job.pipeline:type_name -> carabiner.core.v1.Pipeline
+	6, // 6: carabiner.core.v1.Step.job:type_name -> carabiner.core.v1.Job
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_carabiner_core_v1_objects_proto_init() }
@@ -553,8 +785,8 @@ func file_carabiner_core_v1_objects_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_carabiner_core_v1_objects_proto_rawDesc), len(file_carabiner_core_v1_objects_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   5,
+			NumEnums:      2,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
