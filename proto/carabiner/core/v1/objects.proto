@@ -134,6 +134,11 @@ message Pipeline  {
 	// state is the pipeline's lifecycle state in the source system. Removed
 	// pipelines are marked PIPELINE_STATE_DELETED rather than dropped.
 	PipelineState state = 6;
+
+	// monitored reports whether the platform actively monitors this pipeline.
+	// Monitoring is opt-in: it is off until explicitly enabled, and consumers
+	// default to listing only monitored pipelines.
+	bool monitored = 7;
 }
 
 // Job abstracts a unit of execution within a pipeline that groups steps (e.g. a

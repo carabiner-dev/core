@@ -424,7 +424,11 @@ type Pipeline struct {
 	Path string `protobuf:"bytes,5,opt,name=path,proto3" json:"path,omitempty"`
 	// state is the pipeline's lifecycle state in the source system. Removed
 	// pipelines are marked PIPELINE_STATE_DELETED rather than dropped.
-	State         PipelineState `protobuf:"varint,6,opt,name=state,proto3,enum=carabiner.core.v1.PipelineState" json:"state,omitempty"`
+	State PipelineState `protobuf:"varint,6,opt,name=state,proto3,enum=carabiner.core.v1.PipelineState" json:"state,omitempty"`
+	// monitored reports whether the platform actively monitors this pipeline.
+	// Monitoring is opt-in: it is off until explicitly enabled, and consumers
+	// default to listing only monitored pipelines.
+	Monitored     bool `protobuf:"varint,7,opt,name=monitored,proto3" json:"monitored,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -499,6 +503,13 @@ func (x *Pipeline) GetState() PipelineState {
 		return x.State
 	}
 	return PipelineState_PIPELINE_STATE_UNSPECIFIED
+}
+
+func (x *Pipeline) GetMonitored() bool {
+	if x != nil {
+		return x.Monitored
+	}
+	return false
 }
 
 // Job abstracts a unit of execution within a pipeline that groups steps (e.g. a
@@ -700,7 +711,7 @@ const file_carabiner_core_v1_objects_proto_rawDesc = "" +
 	"visibility\x18\a \x01(\tR\n" +
 	"visibility\x12%\n" +
 	"\x0edefault_branch\x18\b \x01(\tR\rdefaultBranch\x12 \n" +
-	"\vdescription\x18\t \x01(\tR\vdescription\"\xee\x01\n" +
+	"\vdescription\x18\t \x01(\tR\vdescription\"\x8c\x02\n" +
 	"\bPipeline\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12\x1c\n" +
 	"\x04name\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xff\x01R\x04name\x12=\n" +
@@ -710,7 +721,8 @@ const file_carabiner_core_v1_objects_proto_rawDesc = "" +
 	"\vexternal_id\x18\x04 \x01(\tR\n" +
 	"externalId\x12\x12\n" +
 	"\x04path\x18\x05 \x01(\tR\x04path\x126\n" +
-	"\x05state\x18\x06 \x01(\x0e2 .carabiner.core.v1.PipelineStateR\x05state\"\xad\x01\n" +
+	"\x05state\x18\x06 \x01(\x0e2 .carabiner.core.v1.PipelineStateR\x05state\x12\x1c\n" +
+	"\tmonitored\x18\a \x01(\bR\tmonitored\"\xad\x01\n" +
 	"\x03Job\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12\x1c\n" +
 	"\x04name\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xff\x01R\x04name\x127\n" +
