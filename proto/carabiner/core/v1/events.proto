@@ -4,6 +4,7 @@
 syntax = "proto3";
 package carabiner.core.v1;
 
+import "carabiner/core/v1/objects.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 import "buf/validate/validate.proto";
@@ -66,9 +67,11 @@ message EventType {
 
 // Subject is the principal subject of an event: the origin it is about, with its
 // full typed data. The data oneof case determines the subject kind and always
-// agrees with the owning event's type.subject. Within each *Data message, fields
-// numbered 1-9 are the CDEvents-standard content and 10+ are the carabiner
-// generalized extension; the split is applied only when rendering to the wire.
+// agrees with the owning event's type.subject. A subject is either an occurrence
+// (a run, a revision, …) or a catalog object (a Repository). Within an
+// occurrence message, fields numbered 1-9 are the CDEvents-standard content and
+// 10+ are the carabiner generalized extension; the split is applied only when
+// rendering to the wire.
 message Subject {
 	// id is the subject's identifier in the terms of its kind (a UUID for runs, a
 	// commit sha for a revision, a PR number-or-id for a change, …).
@@ -81,35 +84,35 @@ message Subject {
 	// data is the subject's typed payload; the case selects the subject kind.
 	oneof data {
 		// pipeline_run is a pipeline execution (a CI/CD workflow run).
-		PipelineRunData pipeline_run = 10;
+		PipelineRun pipeline_run = 10;
 
-		// task_run is a task (job) execution within a pipeline run.
-		TaskRunData task_run = 11;
+		// task_run is a task execution within a pipeline run.
+		TaskRun task_run = 11;
 
 		// step_run is a step execution within a task run (carabiner extension).
-		StepRunData step_run = 12;
+		StepRun step_run = 12;
 
-		// repository is a source-code repository.
-		RepositoryData repository = 13;
+		// repository is a source-code repository (the catalog object).
+		Repository repository = 13;
 
 		// branch is a branch within a repository.
-		BranchData branch = 14;
+		Branch branch = 14;
 
 		// change is a proposed change (a pull/merge request).
-		ChangeData change = 15;
+		Change change = 15;
 
 		// revision is a single source revision/commit (carabiner extension).
-		RevisionData revision = 16;
+		Revision revision = 16;
 
 		// tag is a tag/release ref (carabiner extension).
-		TagData tag = 17;
+		Tag tag = 17;
 	}
 }
 
-// PipelineRunData is the data for a pipelineRun subject: a single execution of a
-// pipeline (e.g. a GitHub Actions workflow run). Parents and the revision it ran
-// against are carried as related subjects, not embedded here.
-message PipelineRunData {
+// PipelineRun is a single execution of a pipeline (e.g. a GitHub Actions
+// workflow run). It references its declared catalog Pipeline; the revision it
+// ran against is carried as a related subject, not embedded here.
+message PipelineRun {
 	// pipeline_name is the run's pipeline display name (CDEvents-standard).
 	string pipeline_name = 1;
 
@@ -153,11 +156,15 @@ message PipelineRunData {
 
 	// completed_at is when the run finished.
 	google.protobuf.Timestamp completed_at = 18;
+
+	// pipeline references the declared catalog Pipeline this run is an execution
+	// of (a pointer, not the object).
+	Reference pipeline = 19;
 }
 
-// TaskRunData is the data for a taskRun subject: a single execution of a task
-// (job) within a pipeline run.
-message TaskRunData {
+// TaskRun is a single execution of a task within a pipeline run. It references
+// both its parent pipeline run and its declared catalog Task.
+message TaskRun {
 	// task_name is the task run's display name (CDEvents-standard).
 	string task_name = 1;
 
@@ -186,12 +193,17 @@ message TaskRunData {
 
 	// completed_at is when the task finished.
 	google.protobuf.Timestamp completed_at = 14;
+
+	// task references the declared catalog Task this run is an execution of (a
+	// pointer, not the object).
+	Reference task = 15;
 }
 
-// StepRunData is the data for a stepRun subject: a single execution of a step
-// within a task run. Steps have no CDEvents subject; this is a carabiner
-// extension (events use the dev.carabiner.* namespace).
-message StepRunData {
+// StepRun is a single execution of a step within a task run. Steps have no
+// CDEvents subject; this is a carabiner extension (events use the
+// dev.carabiner.* namespace). It references both its parent task run and its
+// declared catalog Step.
+message StepRun {
 	// name is the step run's display name.
 	string name = 1;
 
@@ -216,26 +228,15 @@ message StepRunData {
 
 	// completed_at is when the step finished.
 	google.protobuf.Timestamp completed_at = 14;
+
+	// step references the declared catalog Step this run is an execution of (a
+	// pointer, not the object).
+	Reference step = 15;
 }
 
-// RepositoryData is the data for a repository subject.
-message RepositoryData {
-	// name is the repository's short name.
-	string name = 1;
-
-	// owner is the repository's owner/namespace in the source system.
-	string owner = 2;
-
-	// url is the repository's clone/API URL.
-	string url = 3;
-
-	// view_url is the repository's human-facing web URL.
-	string view_url = 4;
-}
-
-// BranchData is the data for a branch subject. The repository it belongs to is
+// Branch is the data for a branch subject. The repository it belongs to is
 // carried as a related subject.
-message BranchData {
+message Branch {
 	// name is the branch's short name, e.g. "main".
 	string name = 1;
 
@@ -243,9 +244,9 @@ message BranchData {
 	string ref = 2;
 }
 
-// ChangeData is the data for a change subject (a pull/merge request). The
-// branches and revisions it involves are carried as related subjects.
-message ChangeData {
+// Change is a proposed change (a pull/merge request). The branches and revisions
+// it involves are carried as related subjects.
+message Change {
 	// external_id is the change's stable identifier in its source system.
 	string external_id = 1;
 
@@ -268,13 +269,12 @@ message ChangeData {
 	ChangeState state = 11;
 }
 
-// RevisionData is the data for a revision subject: a single source revision
-// (e.g. a git commit). Revisions have no CDEvents subject; this is a carabiner
-// extension (events use the dev.carabiner.* namespace). The term "revision" is
-// VCS-agnostic; the concrete identity lives in the subject descriptor's digest
-// (e.g. a gitCommit digest). The branch, parents and repository are carried as
-// related subjects.
-message RevisionData {
+// Revision is a single source revision (e.g. a git commit). Revisions have no
+// CDEvents subject; this is a carabiner extension (events use the
+// dev.carabiner.* namespace). The term "revision" is VCS-agnostic; the concrete
+// identity lives in the subject descriptor's digest (e.g. a gitCommit digest).
+// The branch, parents and repository are carried as related subjects.
+message Revision {
 	// sha is the revision identifier (e.g. a git commit sha).
 	string sha = 1;
 
@@ -300,11 +300,10 @@ message RevisionData {
 	google.protobuf.Timestamp committed_at = 14;
 }
 
-// TagData is the data for a tag subject: a tag/release ref. Tags have no
-// CDEvents subject; this is a carabiner extension (events use the
-// dev.carabiner.* namespace). The tagged revision and repository are carried as
-// related subjects.
-message TagData {
+// Tag is a tag/release ref. Tags have no CDEvents subject; this is a carabiner
+// extension (events use the dev.carabiner.* namespace). The tagged revision and
+// repository are carried as related subjects.
+message Tag {
 	// name is the tag's name, e.g. "v1.2.0".
 	string name = 1;
 
@@ -339,9 +338,9 @@ message RelatedSubject {
 }
 
 // Reference is a pointer to another object by identity, used where a subject
-// relates to a parent without embedding it. It carries both the carabiner id and
-// the source-system id because a producer often references a parent by its
-// source id before the carabiner id has been assigned.
+// relates to a parent or declared object without embedding it. It carries both
+// the carabiner id and the source-system id because a producer often references
+// an object by its source id before the carabiner id has been assigned.
 message Reference {
 	// id is the carabiner-assigned identifier, when known.
 	string id = 1;
@@ -416,7 +415,7 @@ enum SubjectType {
 	SUBJECT_TYPE_UNSPECIFIED = 0;
 	// A pipeline execution (CDEvents pipelineRun).
 	SUBJECT_TYPE_PIPELINE_RUN = 1;
-	// A task/job execution (CDEvents taskRun).
+	// A task execution (CDEvents taskRun).
 	SUBJECT_TYPE_TASK_RUN = 2;
 	// A source-code repository (CDEvents repository).
 	SUBJECT_TYPE_REPOSITORY = 3;

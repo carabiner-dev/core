@@ -512,43 +512,43 @@ func (x *Pipeline) GetMonitored() bool {
 	return false
 }
 
-// Job abstracts a unit of execution within a pipeline that groups steps (e.g. a
-// GitHub Actions job, or a GitLab CI job). It is the intermediate level between
-// a pipeline and its steps. Systems without a job concept may model a single
-// synthetic job; systems with stages (e.g. GitLab) may record the stage name in
-// `stage`.
-type Job struct {
+// Task abstracts a unit of execution within a pipeline that groups steps (a
+// GitHub Actions job, a GitLab CI job, a Tekton task). It is the intermediate
+// level between a pipeline and its steps. Systems without a task concept may
+// model a single synthetic task; systems with stages (e.g. GitLab) may record
+// the stage name in `stage`.
+type Task struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Carabiner-assigned unique identifier.
 	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
 	// Human-readable display name as reported by the source system. Free-form.
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	// The pipeline this job belongs to.
+	// The pipeline this task belongs to.
 	Pipeline *Pipeline `protobuf:"bytes,3,opt,name=pipeline,proto3" json:"pipeline,omitempty"`
-	// external_id is the job's stable identifier in its source system. For a
+	// external_id is the task's stable identifier in its source system. For a
 	// declared GitHub job this is its key in the workflow file (e.g. "build").
 	ExternalId string `protobuf:"bytes,4,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
-	// stage is an optional grouping the source system places this job in (e.g. a
+	// stage is an optional grouping the source system places this task in (e.g. a
 	// GitLab stage). Empty for systems without stages.
 	Stage         string `protobuf:"bytes,5,opt,name=stage,proto3" json:"stage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Job) Reset() {
-	*x = Job{}
+func (x *Task) Reset() {
+	*x = Task{}
 	mi := &file_carabiner_core_v1_objects_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Job) String() string {
+func (x *Task) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Job) ProtoMessage() {}
+func (*Task) ProtoMessage() {}
 
-func (x *Job) ProtoReflect() protoreflect.Message {
+func (x *Task) ProtoReflect() protoreflect.Message {
 	mi := &file_carabiner_core_v1_objects_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -560,59 +560,59 @@ func (x *Job) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Job.ProtoReflect.Descriptor instead.
-func (*Job) Descriptor() ([]byte, []int) {
+// Deprecated: Use Task.ProtoReflect.Descriptor instead.
+func (*Task) Descriptor() ([]byte, []int) {
 	return file_carabiner_core_v1_objects_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *Job) GetID() string {
+func (x *Task) GetID() string {
 	if x != nil {
 		return x.ID
 	}
 	return ""
 }
 
-func (x *Job) GetName() string {
+func (x *Task) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-func (x *Job) GetPipeline() *Pipeline {
+func (x *Task) GetPipeline() *Pipeline {
 	if x != nil {
 		return x.Pipeline
 	}
 	return nil
 }
 
-func (x *Job) GetExternalId() string {
+func (x *Task) GetExternalId() string {
 	if x != nil {
 		return x.ExternalId
 	}
 	return ""
 }
 
-func (x *Job) GetStage() string {
+func (x *Task) GetStage() string {
 	if x != nil {
 		return x.Stage
 	}
 	return ""
 }
 
-// Step is a single operation within a job (e.g. a GitHub Actions step).
+// Step is a single operation within a task (e.g. a GitHub Actions step).
 type Step struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Carabiner-assigned unique identifier.
 	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
 	// Human-readable display name as reported by the source system. Free-form.
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	// The job this step belongs to.
-	Job *Job `protobuf:"bytes,3,opt,name=job,proto3" json:"job,omitempty"`
+	// The task this step belongs to.
+	Task *Task `protobuf:"bytes,3,opt,name=task,proto3" json:"task,omitempty"`
 	// external_id is the step's stable identifier in its source system, when one
 	// exists.
 	ExternalId string `protobuf:"bytes,4,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
-	// number is the step's 1-based position within its job, used to order steps.
+	// number is the step's 1-based position within its task, used to order steps.
 	Number        uint32 `protobuf:"varint,5,opt,name=number,proto3" json:"number,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -662,9 +662,9 @@ func (x *Step) GetName() string {
 	return ""
 }
 
-func (x *Step) GetJob() *Job {
+func (x *Step) GetTask() *Task {
 	if x != nil {
-		return x.Job
+		return x.Task
 	}
 	return nil
 }
@@ -722,18 +722,18 @@ const file_carabiner_core_v1_objects_proto_rawDesc = "" +
 	"externalId\x12\x12\n" +
 	"\x04path\x18\x05 \x01(\tR\x04path\x126\n" +
 	"\x05state\x18\x06 \x01(\x0e2 .carabiner.core.v1.PipelineStateR\x05state\x12\x1c\n" +
-	"\tmonitored\x18\a \x01(\bR\tmonitored\"\xad\x01\n" +
-	"\x03Job\x12\x18\n" +
+	"\tmonitored\x18\a \x01(\bR\tmonitored\"\xae\x01\n" +
+	"\x04Task\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12\x1c\n" +
 	"\x04name\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xff\x01R\x04name\x127\n" +
 	"\bpipeline\x18\x03 \x01(\v2\x1b.carabiner.core.v1.PipelineR\bpipeline\x12\x1f\n" +
 	"\vexternal_id\x18\x04 \x01(\tR\n" +
 	"externalId\x12\x14\n" +
-	"\x05stage\x18\x05 \x01(\tR\x05stage\"\xa1\x01\n" +
+	"\x05stage\x18\x05 \x01(\tR\x05stage\"\xa4\x01\n" +
 	"\x04Step\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12\x1c\n" +
-	"\x04name\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xff\x01R\x04name\x12(\n" +
-	"\x03job\x18\x03 \x01(\v2\x16.carabiner.core.v1.JobR\x03job\x12\x1f\n" +
+	"\x04name\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xff\x01R\x04name\x12+\n" +
+	"\x04task\x18\x03 \x01(\v2\x17.carabiner.core.v1.TaskR\x04task\x12\x1f\n" +
 	"\vexternal_id\x18\x04 \x01(\tR\n" +
 	"externalId\x12\x16\n" +
 	"\x06number\x18\x05 \x01(\rR\x06number*I\n" +
@@ -769,7 +769,7 @@ var file_carabiner_core_v1_objects_proto_goTypes = []any{
 	(*Namespace)(nil),  // 3: carabiner.core.v1.Namespace
 	(*Repository)(nil), // 4: carabiner.core.v1.Repository
 	(*Pipeline)(nil),   // 5: carabiner.core.v1.Pipeline
-	(*Job)(nil),        // 6: carabiner.core.v1.Job
+	(*Task)(nil),       // 6: carabiner.core.v1.Task
 	(*Step)(nil),       // 7: carabiner.core.v1.Step
 }
 var file_carabiner_core_v1_objects_proto_depIdxs = []int32{
@@ -778,8 +778,8 @@ var file_carabiner_core_v1_objects_proto_depIdxs = []int32{
 	3, // 2: carabiner.core.v1.Repository.namespace:type_name -> carabiner.core.v1.Namespace
 	4, // 3: carabiner.core.v1.Pipeline.repository:type_name -> carabiner.core.v1.Repository
 	1, // 4: carabiner.core.v1.Pipeline.state:type_name -> carabiner.core.v1.PipelineState
-	5, // 5: carabiner.core.v1.Job.pipeline:type_name -> carabiner.core.v1.Pipeline
-	6, // 6: carabiner.core.v1.Step.job:type_name -> carabiner.core.v1.Job
+	5, // 5: carabiner.core.v1.Task.pipeline:type_name -> carabiner.core.v1.Pipeline
+	6, // 6: carabiner.core.v1.Step.task:type_name -> carabiner.core.v1.Task
 	7, // [7:7] is the sub-list for method output_type
 	7, // [7:7] is the sub-list for method input_type
 	7, // [7:7] is the sub-list for extension type_name

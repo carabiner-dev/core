@@ -141,12 +141,12 @@ message Pipeline  {
 	bool monitored = 7;
 }
 
-// Job abstracts a unit of execution within a pipeline that groups steps (e.g. a
-// GitHub Actions job, or a GitLab CI job). It is the intermediate level between
-// a pipeline and its steps. Systems without a job concept may model a single
-// synthetic job; systems with stages (e.g. GitLab) may record the stage name in
-// `stage`.
-message Job {
+// Task abstracts a unit of execution within a pipeline that groups steps (a
+// GitHub Actions job, a GitLab CI job, a Tekton task). It is the intermediate
+// level between a pipeline and its steps. Systems without a task concept may
+// model a single synthetic task; systems with stages (e.g. GitLab) may record
+// the stage name in `stage`.
+message Task {
 	// Carabiner-assigned unique identifier.
 	string ID = 1 [
 		(buf.validate.field).string = {uuid: true}
@@ -157,19 +157,19 @@ message Job {
         (buf.validate.field).string = {max_len: 255}
     ];
 
-	// The pipeline this job belongs to.
+	// The pipeline this task belongs to.
 	Pipeline pipeline = 3;
 
-	// external_id is the job's stable identifier in its source system. For a
+	// external_id is the task's stable identifier in its source system. For a
 	// declared GitHub job this is its key in the workflow file (e.g. "build").
 	string external_id = 4;
 
-	// stage is an optional grouping the source system places this job in (e.g. a
+	// stage is an optional grouping the source system places this task in (e.g. a
 	// GitLab stage). Empty for systems without stages.
 	string stage = 5;
 }
 
-// Step is a single operation within a job (e.g. a GitHub Actions step).
+// Step is a single operation within a task (e.g. a GitHub Actions step).
 message Step {
 	// Carabiner-assigned unique identifier.
 	string ID = 1 [
@@ -181,13 +181,13 @@ message Step {
         (buf.validate.field).string = {max_len: 255}
     ];
 
-	// The job this step belongs to.
-	Job job = 3;
+	// The task this step belongs to.
+	Task task = 3;
 
 	// external_id is the step's stable identifier in its source system, when one
 	// exists.
 	string external_id = 4;
 
-	// number is the step's 1-based position within its job, used to order steps.
+	// number is the step's 1-based position within its task, used to order steps.
 	uint32 number = 5;
 }
