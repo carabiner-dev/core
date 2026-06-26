@@ -6,172 +6,559 @@ package carabiner.core.v1;
 
 import "carabiner/core/v1/objects.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
 import "buf/validate/validate.proto";
 
 option go_package = "github.com/carabiner-dev/core/api/carabiner/core/v1;core";
 
-// RunStatus is the execution status of a pipeline, job or step run. It tracks
-// progress; the final outcome is reported separately by Conclusion once the run
-// reaches RUN_STATUS_COMPLETED.
+// Event is the canonical envelope every system link emits. It follows the
+// CDEvents model: a context (who emitted what, when, uniquely), a single
+// principal subject (the origin the event is about), and the related subjects
+// reachable from it. The CDEvents wire/JSON binding is rendered from this
+// message at emission time; this proto is the internal representation.
+message Event {
+	// id is a unique identifier for this single emission (a UUID). Two events
+	// describing the same object get distinct ids; it is the dedup/idempotency
+	// key. Maps to the CDEvents context id.
+	string id = 1 [
+		(buf.validate.field).string = {uuid: true}
+	];
+
+	// source identifies the producer that emitted the event (the system-link
+	// instance), e.g. "/carabiner/syslink-github". It is NOT the origin/subject;
+	// it is used for provenance and trust. Maps to the CDEvents context source.
+	string source = 2;
+
+	// type is the structured event type (subject + predicate). It renders to the
+	// canonical CDEvents type string (dev.cdevents.* for standard subjects,
+	// dev.carabiner.* for extensions) at emission time.
+	EventType type = 3;
+
+	// timestamp is when the event occurred. For run lifecycle events it is the
+	// time of the transition (a started event carries the start time, etc.).
+	google.protobuf.Timestamp timestamp = 4;
+
+	// subject is the principal subject: the origin the event is about, carrying
+	// its full data. Exactly one per event; its kind matches type.subject.
+	Subject subject = 5;
+
+	// related are the subjects reachable from the origin (its neighborhood):
+	// coordinate-only descriptors an attester selects from to choose what to sign
+	// over. They carry no payload data — an attester fetches what it needs.
+	repeated RelatedSubject related = 6;
+
+	// system_data carries opaque, system-specific detail keyed by system name
+	// (e.g. "github", "gitlab"). It is owned and populated by the producing
+	// system link; core does not interpret it.
+	map<string, google.protobuf.Struct> system_data = 7;
+}
+
+// EventType is the structured event type. The canonical CDEvents type string
+// (dev.<namespace>.<subject>.<predicate>.<version>) is derived from it on wire
+// emission. Not every (subject, predicate) pair is valid; combinations are
+// checked when an event is built.
+message EventType {
+	// subject is the kind of object the event is about.
+	SubjectType subject = 1;
+
+	// predicate is the lifecycle verb (the transition the event reports).
+	Predicate predicate = 2;
+}
+
+// Subject is the principal subject of an event: the origin it is about, with its
+// full typed data. The data oneof case determines the subject kind and always
+// agrees with the owning event's type.subject. A subject is either an occurrence
+// (a run, a revision, …) or a catalog object (a Repository). Within an
+// occurrence message, fields numbered 1-9 are the CDEvents-standard content and
+// 10+ are the carabiner generalized extension; the split is applied only when
+// rendering to the wire.
+message Subject {
+	// id is the subject's identifier in the terms of its kind (a UUID for runs, a
+	// commit sha for a revision, a PR number-or-id for a change, …).
+	string id = 1;
+
+	// source is where the subject lives, when meaningful (e.g. the repository
+	// URI). Optional.
+	string source = 2;
+
+	// data is the subject's typed payload; the case selects the subject kind.
+	oneof data {
+		// pipeline_run is a pipeline execution (a CI/CD workflow run).
+		PipelineRun pipeline_run = 10;
+
+		// task_run is a task execution within a pipeline run.
+		TaskRun task_run = 11;
+
+		// step_run is a step execution within a task run (carabiner extension).
+		StepRun step_run = 12;
+
+		// repository is a source-code repository (the catalog object).
+		Repository repository = 13;
+
+		// branch is a branch within a repository.
+		Branch branch = 14;
+
+		// change is a proposed change (a pull/merge request).
+		Change change = 15;
+
+		// revision is a single source revision/commit (carabiner extension).
+		Revision revision = 16;
+
+		// tag is a tag/release ref (carabiner extension).
+		Tag tag = 17;
+	}
+}
+
+// PipelineRun is a single execution of a pipeline (e.g. a GitHub Actions
+// workflow run). It references its declared catalog Pipeline; the revision it
+// ran against is carried as a related subject, not embedded here.
+message PipelineRun {
+	// pipeline_name is the run's pipeline display name (CDEvents-standard).
+	string pipeline_name = 1;
+
+	// url is the run's web URL in the source system (CDEvents-standard).
+	string url = 2;
+
+	// outcome is the run's CDEvents-standard outcome; meaningful once finished.
+	Outcome outcome = 3;
+
+	// errors is a human-readable description of the failure, when finished with a
+	// non-success outcome (CDEvents-standard).
+	string errors = 4;
+
+	// status is the run's current lifecycle state (queued/started/finished); it
+	// mirrors the event predicate.
+	RunStatus status = 10;
+
+	// external_id is the run's stable identifier in its source system (e.g. a
+	// GitHub workflow run ID). The universal lookup/idempotency key.
+	string external_id = 11;
+
+	// run_number is the source system's human-facing sequence number for the run.
+	// Optional: not every system assigns one.
+	optional uint64 run_number = 12;
+
+	// run_attempt is the attempt counter for re-runs of the same run. Optional.
+	optional uint32 run_attempt = 13;
+
+	// conclusion is the precise carabiner outcome, retaining detail (cancelled,
+	// skipped, timed out, …) that the standard 3-value outcome cannot express.
+	Conclusion conclusion = 14;
+
+	// triggered_by is the actor that triggered the run.
+	Actor triggered_by = 15;
+
+	// created_at is when the run was created/queued.
+	google.protobuf.Timestamp created_at = 16;
+
+	// started_at is when the run began executing.
+	google.protobuf.Timestamp started_at = 17;
+
+	// completed_at is when the run finished.
+	google.protobuf.Timestamp completed_at = 18;
+
+	// pipeline references the declared catalog Pipeline this run is an execution
+	// of (a pointer, not the object).
+	Reference pipeline = 19;
+}
+
+// TaskRun is a single execution of a task within a pipeline run. It references
+// both its parent pipeline run and its declared catalog Task.
+message TaskRun {
+	// task_name is the task run's display name (CDEvents-standard).
+	string task_name = 1;
+
+	// url is the task run's web URL in the source system (CDEvents-standard).
+	string url = 2;
+
+	// outcome is the task run's CDEvents-standard outcome; meaningful once
+	// finished.
+	Outcome outcome = 3;
+
+	// errors is a human-readable failure description when finished with a
+	// non-success outcome (CDEvents-standard).
+	string errors = 4;
+
+	// status is the task run's current lifecycle state; it mirrors the predicate.
+	RunStatus status = 10;
+
+	// external_id is the task run's stable identifier in its source system.
+	string external_id = 11;
+
+	// pipeline_run references the parent pipeline run (a pointer, not the object).
+	Reference pipeline_run = 12;
+
+	// started_at is when the task began executing.
+	google.protobuf.Timestamp started_at = 13;
+
+	// completed_at is when the task finished.
+	google.protobuf.Timestamp completed_at = 14;
+
+	// task references the declared catalog Task this run is an execution of (a
+	// pointer, not the object).
+	Reference task = 15;
+}
+
+// StepRun is a single execution of a step within a task run. Steps have no
+// CDEvents subject; this is a carabiner extension (events use the
+// dev.carabiner.* namespace). It references both its parent task run and its
+// declared catalog Step.
+message StepRun {
+	// name is the step run's display name.
+	string name = 1;
+
+	// outcome is the step run's outcome; meaningful once finished.
+	Outcome outcome = 2;
+
+	// errors is a human-readable failure description when finished with a
+	// non-success outcome.
+	string errors = 3;
+
+	// status is the step run's current lifecycle state; it mirrors the predicate.
+	RunStatus status = 10;
+
+	// number is the step's 1-based position within its task run. Optional.
+	optional uint32 number = 11;
+
+	// task_run references the parent task run (a pointer, not the object).
+	Reference task_run = 12;
+
+	// started_at is when the step began executing.
+	google.protobuf.Timestamp started_at = 13;
+
+	// completed_at is when the step finished.
+	google.protobuf.Timestamp completed_at = 14;
+
+	// step references the declared catalog Step this run is an execution of (a
+	// pointer, not the object).
+	Reference step = 15;
+}
+
+// Branch is the data for a branch subject. The repository it belongs to is
+// carried as a related subject.
+message Branch {
+	// name is the branch's short name, e.g. "main".
+	string name = 1;
+
+	// ref is the branch's full ref, e.g. "refs/heads/main".
+	string ref = 2;
+}
+
+// Change is a proposed change (a pull/merge request). The branches and revisions
+// it involves are carried as related subjects.
+message Change {
+	// external_id is the change's stable identifier in its source system.
+	string external_id = 1;
+
+	// number is the change's human-facing number (e.g. a PR/MR number). Optional.
+	optional uint64 number = 2;
+
+	// title is the change's title.
+	string title = 3;
+
+	// description is the change's body/description.
+	string description = 4;
+
+	// url is the change's web URL.
+	string url = 5;
+
+	// author is the actor that opened the change.
+	Actor author = 10;
+
+	// state is the change's lifecycle state.
+	ChangeState state = 11;
+}
+
+// Revision is a single source revision (e.g. a git commit). Revisions have no
+// CDEvents subject; this is a carabiner extension (events use the
+// dev.carabiner.* namespace). The term "revision" is VCS-agnostic; the concrete
+// identity lives in the subject descriptor's digest (e.g. a gitCommit digest).
+// The branch, parents and repository are carried as related subjects.
+message Revision {
+	// sha is the revision identifier (e.g. a git commit sha).
+	string sha = 1;
+
+	// message is the revision's commit message.
+	string message = 2;
+
+	// url is the revision's web URL.
+	string url = 3;
+
+	// author is the actor that authored the revision.
+	Actor author = 10;
+
+	// committer is the actor that committed the revision.
+	Actor committer = 11;
+
+	// tree_sha is the identifier of the revision's tree, when available.
+	string tree_sha = 12;
+
+	// authored_at is when the revision was authored.
+	google.protobuf.Timestamp authored_at = 13;
+
+	// committed_at is when the revision was committed.
+	google.protobuf.Timestamp committed_at = 14;
+}
+
+// Tag is a tag/release ref. Tags have no CDEvents subject; this is a carabiner
+// extension (events use the dev.carabiner.* namespace). The tagged revision and
+// repository are carried as related subjects.
+message Tag {
+	// name is the tag's name, e.g. "v1.2.0".
+	string name = 1;
+
+	// ref is the tag's full ref, e.g. "refs/tags/v1.2.0".
+	string ref = 2;
+
+	// annotated reports whether this is an annotated tag (vs a lightweight ref).
+	bool annotated = 3;
+
+	// tagger is the actor that created the tag (for annotated tags).
+	Actor tagger = 10;
+
+	// message is the tag's annotation message (for annotated tags).
+	string message = 11;
+}
+
+// RelatedSubject is one node in the origin's neighborhood: a subject reachable
+// from the principal subject, carried as a coordinate-only descriptor so an
+// attester can select it and promote it to an attestation subject. It carries no
+// payload data; an attester fetches whatever depth it needs (a field to a full
+// revision tree) using the coordinates.
+message RelatedSubject {
+	// role is the typed relationship from the origin to this subject.
+	SubjectRole role = 1;
+
+	// type is the kind of subject this is.
+	SubjectType type = 2;
+
+	// descriptor is the resolvable coordinate (uri and/or digest) plus
+	// annotations. It is content-free.
+	ResourceDescriptor descriptor = 3;
+}
+
+// Reference is a pointer to another object by identity, used where a subject
+// relates to a parent or declared object without embedding it. It carries both
+// the carabiner id and the source-system id because a producer often references
+// an object by its source id before the carabiner id has been assigned.
+message Reference {
+	// id is the carabiner-assigned identifier, when known.
+	string id = 1;
+
+	// source is the producer/source-system URI the referenced object lives in.
+	string source = 2;
+
+	// external_id is the referenced object's stable identifier in its source
+	// system. Used to resolve the reference before a carabiner id exists.
+	string external_id = 3;
+}
+
+// Actor is a participant in an event (a run trigger-er, a change author, …). It
+// is the CI/CD-agnostic subset that any source system can populate; system-
+// specific actor detail belongs in the event's system_data.
+message Actor {
+	// id is the actor's stable identifier in its source system, as a string so it
+	// can hold a numeric id (GitHub/GitLab), a URI, or an email.
+	string id = 1;
+
+	// username is the actor's handle/login.
+	string username = 2;
+
+	// name is the actor's display name.
+	string name = 3;
+
+	// email is the actor's email address, when available.
+	string email = 4;
+
+	// type is the kind of actor (user, bot, app, …).
+	ActorType type = 5;
+
+	// url is the actor's profile URL.
+	string url = 6;
+}
+
+// ResourceDescriptor identifies a resource by coordinates without carrying its
+// content. It mirrors the in-toto attestation ResourceDescriptor field-for-field
+// so a selected related subject can be promoted directly to an attestation
+// statement subject (a future swap to the upstream type is drop-in).
+message ResourceDescriptor {
+	// name is a human-readable identifier for the resource.
+	string name = 1;
+
+	// uri is the resource's location (e.g. a VCS locator).
+	string uri = 2;
+
+	// digest is a set of cryptographic digests keyed by algorithm (e.g.
+	// "gitCommit" -> sha), identifying the resource's content.
+	map<string, string> digest = 3;
+
+	// content is the resource's inline content. Left empty for coordinate-only
+	// related subjects.
+	bytes content = 4;
+
+	// download_location is where the resource can be downloaded, when applicable.
+	string download_location = 5;
+
+	// media_type is the resource's media type, when applicable.
+	string media_type = 6;
+
+	// annotations carries additional, machine-readable metadata about the
+	// resource (e.g. carabiner role/type/ids).
+	google.protobuf.Struct annotations = 7;
+}
+
+// SubjectType is the kind of a subject. The first group are CDEvents-standard
+// subjects; the second are carabiner extensions (rendered under the
+// dev.carabiner.* namespace).
+enum SubjectType {
+	// Unspecified / not set.
+	SUBJECT_TYPE_UNSPECIFIED = 0;
+	// A pipeline execution (CDEvents pipelineRun).
+	SUBJECT_TYPE_PIPELINE_RUN = 1;
+	// A task execution (CDEvents taskRun).
+	SUBJECT_TYPE_TASK_RUN = 2;
+	// A source-code repository (CDEvents repository).
+	SUBJECT_TYPE_REPOSITORY = 3;
+	// A branch within a repository (CDEvents branch).
+	SUBJECT_TYPE_BRANCH = 4;
+	// A proposed change / pull-merge request (CDEvents change).
+	SUBJECT_TYPE_CHANGE = 5;
+	// A step execution within a task (carabiner extension).
+	SUBJECT_TYPE_STEP_RUN = 6;
+	// A single source revision/commit (carabiner extension).
+	SUBJECT_TYPE_REVISION = 7;
+	// A tag/release ref (carabiner extension).
+	SUBJECT_TYPE_TAG = 8;
+}
+
+// Predicate is the lifecycle verb of an event. Which predicates are valid
+// depends on the subject (e.g. pipelineRun: queued/started/finished;
+// change: created/reviewed/merged/abandoned/updated).
+enum Predicate {
+	// Unspecified / not set.
+	PREDICATE_UNSPECIFIED = 0;
+	// The subject was accepted but has not started (queued/pending).
+	PREDICATE_QUEUED = 1;
+	// The subject began executing.
+	PREDICATE_STARTED = 2;
+	// The subject finished executing; see outcome.
+	PREDICATE_FINISHED = 3;
+	// The subject came into existence.
+	PREDICATE_CREATED = 4;
+	// The subject was modified.
+	PREDICATE_MODIFIED = 5;
+	// The subject was deleted.
+	PREDICATE_DELETED = 6;
+	// The subject (a change) was reviewed.
+	PREDICATE_REVIEWED = 7;
+	// The subject (a change) was merged.
+	PREDICATE_MERGED = 8;
+	// The subject (a change) was abandoned/closed without merging.
+	PREDICATE_ABANDONED = 9;
+	// The subject was updated.
+	PREDICATE_UPDATED = 10;
+}
+
+// RunStatus is the lifecycle state of a run. Its values are the CDEvents run
+// verbs, so a run's status and the event predicate that reports it are the same
+// vocabulary. The final outcome of a finished run is reported by Outcome.
 enum RunStatus {
 	// Unknown / not reported.
 	RUN_STATUS_UNSPECIFIED = 0;
-	// Accepted by the system but not yet started (queued/waiting/pending).
+	// Accepted but not yet started (queued/waiting/pending).
 	RUN_STATUS_QUEUED = 1;
 	// Currently executing.
-	RUN_STATUS_IN_PROGRESS = 2;
-	// Finished executing; see Conclusion for the outcome.
-	RUN_STATUS_COMPLETED = 3;
+	RUN_STATUS_STARTED = 2;
+	// Finished executing; see Outcome for the result.
+	RUN_STATUS_FINISHED = 3;
 }
 
-// Conclusion is the outcome of a completed run. It is meaningful only once a run
-// reaches RUN_STATUS_COMPLETED; while in progress it is
-// RUN_CONCLUSION_UNSPECIFIED.
+// Outcome is the CDEvents-standard outcome of a finished run. It is a small,
+// fixed set; carabiner's richer detail is carried by Conclusion.
+enum Outcome {
+	// Not yet concluded (still running) or not reported.
+	OUTCOME_UNSPECIFIED = 0;
+	// Finished successfully.
+	OUTCOME_SUCCESS = 1;
+	// Finished with a failure (the work ran and did not pass).
+	OUTCOME_FAILURE = 2;
+	// Finished with an error (the run could not complete normally).
+	OUTCOME_ERROR = 3;
+}
+
+// Conclusion is the precise carabiner outcome of a finished run. It retains
+// detail the standard Outcome cannot express and maps down to Outcome on wire
+// emission.
 enum Conclusion {
 	// Not yet concluded (still running) or not reported.
-	RUN_CONCLUSION_UNSPECIFIED = 0;
+	CONCLUSION_UNSPECIFIED = 0;
 	// Completed successfully.
-	RUN_CONCLUSION_SUCCESS = 1;
+	CONCLUSION_SUCCESS = 1;
 	// Completed with a failure.
-	RUN_CONCLUSION_FAILURE = 2;
+	CONCLUSION_FAILURE = 2;
 	// Cancelled before completing.
-	RUN_CONCLUSION_CANCELLED = 3;
+	CONCLUSION_CANCELLED = 3;
 	// Skipped (e.g. a conditional that evaluated false).
-	RUN_CONCLUSION_SKIPPED = 4;
+	CONCLUSION_SKIPPED = 4;
 	// Exceeded its time limit.
-	RUN_CONCLUSION_TIMED_OUT = 5;
+	CONCLUSION_TIMED_OUT = 5;
 	// Requires manual intervention to proceed.
-	RUN_CONCLUSION_ACTION_REQUIRED = 6;
+	CONCLUSION_ACTION_REQUIRED = 6;
 	// Completed without a positive or negative result.
-	RUN_CONCLUSION_NEUTRAL = 7;
+	CONCLUSION_NEUTRAL = 7;
 	// Superseded by a newer run before completing.
-	RUN_CONCLUSION_STALE = 8;
+	CONCLUSION_STALE = 8;
 }
 
-// PipelineRun captures a single execution of a pipeline (e.g. a GitHub Actions
-// workflow run). Its status and conclusion are updated as the run progresses.
-message PipelineRun  {
-	// Carabiner-assigned unique identifier.
-	string ID = 1 [
-		(buf.validate.field).string = {uuid: true}
-	];
-
-	// The pipeline that was run.
-	Pipeline pipeline = 2;
-
-	// external_id is the run's stable identifier in its source system (e.g. a
-	// GitHub workflow run ID). The idempotency/lookup key for the run.
-	string external_id = 3;
-
-	// run_number is the source system's human-facing sequence number for the
-	// run within its pipeline.
-	uint64 run_number = 4;
-
-	// run_attempt is the attempt counter for re-runs of the same run (starts at 1).
-	uint32 run_attempt = 5;
-
-	// status is the run's current execution status.
-	RunStatus status = 6;
-
-	// conclusion is the run's outcome once completed.
-	Conclusion conclusion = 7;
-
-	// head_sha is the commit the run executed against.
-	string head_sha = 8;
-
-	// head_branch is the branch (or ref) the run executed against.
-	string head_branch = 9;
-
-	// event is the source-system event that triggered the run, e.g. "push",
-	// "pull_request" or "schedule".
-	string event = 10;
-
-	// actor is the identity that triggered the run (e.g. a username).
-	string actor = 11;
-
-	// url is the run's web URL in the source system.
-	string url = 12;
-
-	// created_at is when the run was created/queued.
-	google.protobuf.Timestamp created_at = 13;
-
-	// started_at is when the run began executing.
-	google.protobuf.Timestamp started_at = 14;
-
-	// completed_at is when the run finished.
-	google.protobuf.Timestamp completed_at = 15;
+// ActorType is the kind of an actor.
+enum ActorType {
+	// Unspecified / not set.
+	ACTOR_TYPE_UNSPECIFIED = 0;
+	// A human user.
+	ACTOR_TYPE_USER = 1;
+	// An automation bot (e.g. github-actions[bot]).
+	ACTOR_TYPE_BOT = 2;
+	// An application/integration acting on its own behalf.
+	ACTOR_TYPE_APP = 3;
+	// A service account.
+	ACTOR_TYPE_SERVICE_ACCOUNT = 4;
 }
 
-// JobRun captures a single execution of a job within a pipeline run.
-message JobRun {
-	// Carabiner-assigned unique identifier.
-	string ID = 1 [
-		(buf.validate.field).string = {uuid: true}
-	];
-
-	// The declared job this run corresponds to, when known.
-	Job job = 2;
-
-	// The pipeline run this job run belongs to.
-	PipelineRun pipeline_run = 3;
-
-	// external_id is the job run's stable identifier in its source system (e.g.
-	// a GitHub job ID).
-	string external_id = 4;
-
-	// name is the job run's display name (may differ per run, e.g. matrix
-	// expansions like "build (ubuntu-latest)").
-	string name = 5 [
-		(buf.validate.field).string = {max_len: 255}
-	];
-
-	// status is the job run's current execution status.
-	RunStatus status = 6;
-
-	// conclusion is the job run's outcome once completed.
-	Conclusion conclusion = 7;
-
-	// url is the job run's web URL in the source system.
-	string url = 8;
-
-	// started_at is when the job began executing.
-	google.protobuf.Timestamp started_at = 9;
-
-	// completed_at is when the job finished.
-	google.protobuf.Timestamp completed_at = 10;
+// SubjectRole is the typed relationship from an origin to a related subject. The
+// set is extensible as new relationships are needed.
+enum SubjectRole {
+	// Unspecified / not set.
+	SUBJECT_ROLE_UNSPECIFIED = 0;
+	// The related subject is the repository the origin belongs to.
+	SUBJECT_ROLE_IN_REPOSITORY = 1;
+	// The related subject is the branch the origin landed on.
+	SUBJECT_ROLE_ON_BRANCH = 2;
+	// The related subject is a change's source branch.
+	SUBJECT_ROLE_SOURCE_BRANCH = 3;
+	// The related subject is a change's target branch.
+	SUBJECT_ROLE_TARGET_BRANCH = 4;
+	// The related subject is the head revision.
+	SUBJECT_ROLE_HEAD = 5;
+	// The related subject is the base revision.
+	SUBJECT_ROLE_BASE = 6;
+	// The related subject is a parent revision (a commit parent).
+	SUBJECT_ROLE_PARENT = 7;
+	// The related subject is a merge revision (a merge commit).
+	SUBJECT_ROLE_MERGE = 8;
+	// The related subject is the revision a tag points to.
+	SUBJECT_ROLE_TAGGED = 9;
 }
 
-// StepRun captures a single execution of a step within a job run. The first
-// step run with RUN_CONCLUSION_FAILURE pinpoints where a job failed.
-message StepRun {
-	// Carabiner-assigned unique identifier.
-	string ID = 1 [
-		(buf.validate.field).string = {uuid: true}
-	];
-
-	// The declared step this run corresponds to, when known.
-	Step step = 2;
-
-	// The job run this step run belongs to.
-	JobRun job_run = 3;
-
-	// name is the step run's display name.
-	string name = 4 [
-		(buf.validate.field).string = {max_len: 255}
-	];
-
-	// number is the step's 1-based position within its job.
-	uint32 number = 5;
-
-	// status is the step run's current execution status.
-	RunStatus status = 6;
-
-	// conclusion is the step run's outcome once completed.
-	Conclusion conclusion = 7;
-
-	// started_at is when the step began executing.
-	google.protobuf.Timestamp started_at = 8;
-
-	// completed_at is when the step finished.
-	google.protobuf.Timestamp completed_at = 9;
+// ChangeState is the lifecycle state of a change (pull/merge request).
+enum ChangeState {
+	// Unspecified / not set.
+	CHANGE_STATE_UNSPECIFIED = 0;
+	// Open and awaiting review/merge.
+	CHANGE_STATE_OPEN = 1;
+	// Open but marked as a draft / work in progress.
+	CHANGE_STATE_DRAFT = 2;
+	// Merged into its target.
+	CHANGE_STATE_MERGED = 3;
+	// Closed without merging.
+	CHANGE_STATE_CLOSED = 4;
 }

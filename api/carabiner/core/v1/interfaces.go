@@ -6,7 +6,3 @@ package core
 type Object interface {
 	Kind() string
 }
-
-type Event interface {
-	Kind() string
-}

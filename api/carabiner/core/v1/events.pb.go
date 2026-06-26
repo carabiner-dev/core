@@ -13,6 +13,7 @@ import (
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -26,20 +27,186 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// RunStatus is the execution status of a pipeline, job or step run. It tracks
-// progress; the final outcome is reported separately by Conclusion once the run
-// reaches RUN_STATUS_COMPLETED.
+// SubjectType is the kind of a subject. The first group are CDEvents-standard
+// subjects; the second are carabiner extensions (rendered under the
+// dev.carabiner.* namespace).
+type SubjectType int32
+
+const (
+	// Unspecified / not set.
+	SubjectType_SUBJECT_TYPE_UNSPECIFIED SubjectType = 0
+	// A pipeline execution (CDEvents pipelineRun).
+	SubjectType_SUBJECT_TYPE_PIPELINE_RUN SubjectType = 1
+	// A task execution (CDEvents taskRun).
+	SubjectType_SUBJECT_TYPE_TASK_RUN SubjectType = 2
+	// A source-code repository (CDEvents repository).
+	SubjectType_SUBJECT_TYPE_REPOSITORY SubjectType = 3
+	// A branch within a repository (CDEvents branch).
+	SubjectType_SUBJECT_TYPE_BRANCH SubjectType = 4
+	// A proposed change / pull-merge request (CDEvents change).
+	SubjectType_SUBJECT_TYPE_CHANGE SubjectType = 5
+	// A step execution within a task (carabiner extension).
+	SubjectType_SUBJECT_TYPE_STEP_RUN SubjectType = 6
+	// A single source revision/commit (carabiner extension).
+	SubjectType_SUBJECT_TYPE_REVISION SubjectType = 7
+	// A tag/release ref (carabiner extension).
+	SubjectType_SUBJECT_TYPE_TAG SubjectType = 8
+)
+
+// Enum value maps for SubjectType.
+var (
+	SubjectType_name = map[int32]string{
+		0: "SUBJECT_TYPE_UNSPECIFIED",
+		1: "SUBJECT_TYPE_PIPELINE_RUN",
+		2: "SUBJECT_TYPE_TASK_RUN",
+		3: "SUBJECT_TYPE_REPOSITORY",
+		4: "SUBJECT_TYPE_BRANCH",
+		5: "SUBJECT_TYPE_CHANGE",
+		6: "SUBJECT_TYPE_STEP_RUN",
+		7: "SUBJECT_TYPE_REVISION",
+		8: "SUBJECT_TYPE_TAG",
+	}
+	SubjectType_value = map[string]int32{
+		"SUBJECT_TYPE_UNSPECIFIED":  0,
+		"SUBJECT_TYPE_PIPELINE_RUN": 1,
+		"SUBJECT_TYPE_TASK_RUN":     2,
+		"SUBJECT_TYPE_REPOSITORY":   3,
+		"SUBJECT_TYPE_BRANCH":       4,
+		"SUBJECT_TYPE_CHANGE":       5,
+		"SUBJECT_TYPE_STEP_RUN":     6,
+		"SUBJECT_TYPE_REVISION":     7,
+		"SUBJECT_TYPE_TAG":          8,
+	}
+)
+
+func (x SubjectType) Enum() *SubjectType {
+	p := new(SubjectType)
+	*p = x
+	return p
+}
+
+func (x SubjectType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SubjectType) Descriptor() protoreflect.EnumDescriptor {
+	return file_carabiner_core_v1_events_proto_enumTypes[0].Descriptor()
+}
+
+func (SubjectType) Type() protoreflect.EnumType {
+	return &file_carabiner_core_v1_events_proto_enumTypes[0]
+}
+
+func (x SubjectType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SubjectType.Descriptor instead.
+func (SubjectType) EnumDescriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{0}
+}
+
+// Predicate is the lifecycle verb of an event. Which predicates are valid
+// depends on the subject (e.g. pipelineRun: queued/started/finished;
+// change: created/reviewed/merged/abandoned/updated).
+type Predicate int32
+
+const (
+	// Unspecified / not set.
+	Predicate_PREDICATE_UNSPECIFIED Predicate = 0
+	// The subject was accepted but has not started (queued/pending).
+	Predicate_PREDICATE_QUEUED Predicate = 1
+	// The subject began executing.
+	Predicate_PREDICATE_STARTED Predicate = 2
+	// The subject finished executing; see outcome.
+	Predicate_PREDICATE_FINISHED Predicate = 3
+	// The subject came into existence.
+	Predicate_PREDICATE_CREATED Predicate = 4
+	// The subject was modified.
+	Predicate_PREDICATE_MODIFIED Predicate = 5
+	// The subject was deleted.
+	Predicate_PREDICATE_DELETED Predicate = 6
+	// The subject (a change) was reviewed.
+	Predicate_PREDICATE_REVIEWED Predicate = 7
+	// The subject (a change) was merged.
+	Predicate_PREDICATE_MERGED Predicate = 8
+	// The subject (a change) was abandoned/closed without merging.
+	Predicate_PREDICATE_ABANDONED Predicate = 9
+	// The subject was updated.
+	Predicate_PREDICATE_UPDATED Predicate = 10
+)
+
+// Enum value maps for Predicate.
+var (
+	Predicate_name = map[int32]string{
+		0:  "PREDICATE_UNSPECIFIED",
+		1:  "PREDICATE_QUEUED",
+		2:  "PREDICATE_STARTED",
+		3:  "PREDICATE_FINISHED",
+		4:  "PREDICATE_CREATED",
+		5:  "PREDICATE_MODIFIED",
+		6:  "PREDICATE_DELETED",
+		7:  "PREDICATE_REVIEWED",
+		8:  "PREDICATE_MERGED",
+		9:  "PREDICATE_ABANDONED",
+		10: "PREDICATE_UPDATED",
+	}
+	Predicate_value = map[string]int32{
+		"PREDICATE_UNSPECIFIED": 0,
+		"PREDICATE_QUEUED":      1,
+		"PREDICATE_STARTED":     2,
+		"PREDICATE_FINISHED":    3,
+		"PREDICATE_CREATED":     4,
+		"PREDICATE_MODIFIED":    5,
+		"PREDICATE_DELETED":     6,
+		"PREDICATE_REVIEWED":    7,
+		"PREDICATE_MERGED":      8,
+		"PREDICATE_ABANDONED":   9,
+		"PREDICATE_UPDATED":     10,
+	}
+)
+
+func (x Predicate) Enum() *Predicate {
+	p := new(Predicate)
+	*p = x
+	return p
+}
+
+func (x Predicate) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Predicate) Descriptor() protoreflect.EnumDescriptor {
+	return file_carabiner_core_v1_events_proto_enumTypes[1].Descriptor()
+}
+
+func (Predicate) Type() protoreflect.EnumType {
+	return &file_carabiner_core_v1_events_proto_enumTypes[1]
+}
+
+func (x Predicate) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Predicate.Descriptor instead.
+func (Predicate) EnumDescriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{1}
+}
+
+// RunStatus is the lifecycle state of a run. Its values are the CDEvents run
+// verbs, so a run's status and the event predicate that reports it are the same
+// vocabulary. The final outcome of a finished run is reported by Outcome.
 type RunStatus int32
 
 const (
 	// Unknown / not reported.
 	RunStatus_RUN_STATUS_UNSPECIFIED RunStatus = 0
-	// Accepted by the system but not yet started (queued/waiting/pending).
+	// Accepted but not yet started (queued/waiting/pending).
 	RunStatus_RUN_STATUS_QUEUED RunStatus = 1
 	// Currently executing.
-	RunStatus_RUN_STATUS_IN_PROGRESS RunStatus = 2
-	// Finished executing; see Conclusion for the outcome.
-	RunStatus_RUN_STATUS_COMPLETED RunStatus = 3
+	RunStatus_RUN_STATUS_STARTED RunStatus = 2
+	// Finished executing; see Outcome for the result.
+	RunStatus_RUN_STATUS_FINISHED RunStatus = 3
 )
 
 // Enum value maps for RunStatus.
@@ -47,14 +214,14 @@ var (
 	RunStatus_name = map[int32]string{
 		0: "RUN_STATUS_UNSPECIFIED",
 		1: "RUN_STATUS_QUEUED",
-		2: "RUN_STATUS_IN_PROGRESS",
-		3: "RUN_STATUS_COMPLETED",
+		2: "RUN_STATUS_STARTED",
+		3: "RUN_STATUS_FINISHED",
 	}
 	RunStatus_value = map[string]int32{
 		"RUN_STATUS_UNSPECIFIED": 0,
 		"RUN_STATUS_QUEUED":      1,
-		"RUN_STATUS_IN_PROGRESS": 2,
-		"RUN_STATUS_COMPLETED":   3,
+		"RUN_STATUS_STARTED":     2,
+		"RUN_STATUS_FINISHED":    3,
 	}
 )
 
@@ -69,11 +236,11 @@ func (x RunStatus) String() string {
 }
 
 func (RunStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_carabiner_core_v1_events_proto_enumTypes[0].Descriptor()
+	return file_carabiner_core_v1_events_proto_enumTypes[2].Descriptor()
 }
 
 func (RunStatus) Type() protoreflect.EnumType {
-	return &file_carabiner_core_v1_events_proto_enumTypes[0]
+	return &file_carabiner_core_v1_events_proto_enumTypes[2]
 }
 
 func (x RunStatus) Number() protoreflect.EnumNumber {
@@ -82,58 +249,116 @@ func (x RunStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RunStatus.Descriptor instead.
 func (RunStatus) EnumDescriptor() ([]byte, []int) {
-	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{0}
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{2}
 }
 
-// Conclusion is the outcome of a completed run. It is meaningful only once a run
-// reaches RUN_STATUS_COMPLETED; while in progress it is
-// RUN_CONCLUSION_UNSPECIFIED.
+// Outcome is the CDEvents-standard outcome of a finished run. It is a small,
+// fixed set; carabiner's richer detail is carried by Conclusion.
+type Outcome int32
+
+const (
+	// Not yet concluded (still running) or not reported.
+	Outcome_OUTCOME_UNSPECIFIED Outcome = 0
+	// Finished successfully.
+	Outcome_OUTCOME_SUCCESS Outcome = 1
+	// Finished with a failure (the work ran and did not pass).
+	Outcome_OUTCOME_FAILURE Outcome = 2
+	// Finished with an error (the run could not complete normally).
+	Outcome_OUTCOME_ERROR Outcome = 3
+)
+
+// Enum value maps for Outcome.
+var (
+	Outcome_name = map[int32]string{
+		0: "OUTCOME_UNSPECIFIED",
+		1: "OUTCOME_SUCCESS",
+		2: "OUTCOME_FAILURE",
+		3: "OUTCOME_ERROR",
+	}
+	Outcome_value = map[string]int32{
+		"OUTCOME_UNSPECIFIED": 0,
+		"OUTCOME_SUCCESS":     1,
+		"OUTCOME_FAILURE":     2,
+		"OUTCOME_ERROR":       3,
+	}
+)
+
+func (x Outcome) Enum() *Outcome {
+	p := new(Outcome)
+	*p = x
+	return p
+}
+
+func (x Outcome) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Outcome) Descriptor() protoreflect.EnumDescriptor {
+	return file_carabiner_core_v1_events_proto_enumTypes[3].Descriptor()
+}
+
+func (Outcome) Type() protoreflect.EnumType {
+	return &file_carabiner_core_v1_events_proto_enumTypes[3]
+}
+
+func (x Outcome) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Outcome.Descriptor instead.
+func (Outcome) EnumDescriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{3}
+}
+
+// Conclusion is the precise carabiner outcome of a finished run. It retains
+// detail the standard Outcome cannot express and maps down to Outcome on wire
+// emission.
 type Conclusion int32
 
 const (
 	// Not yet concluded (still running) or not reported.
-	Conclusion_RUN_CONCLUSION_UNSPECIFIED Conclusion = 0
+	Conclusion_CONCLUSION_UNSPECIFIED Conclusion = 0
 	// Completed successfully.
-	Conclusion_RUN_CONCLUSION_SUCCESS Conclusion = 1
+	Conclusion_CONCLUSION_SUCCESS Conclusion = 1
 	// Completed with a failure.
-	Conclusion_RUN_CONCLUSION_FAILURE Conclusion = 2
+	Conclusion_CONCLUSION_FAILURE Conclusion = 2
 	// Cancelled before completing.
-	Conclusion_RUN_CONCLUSION_CANCELLED Conclusion = 3
+	Conclusion_CONCLUSION_CANCELLED Conclusion = 3
 	// Skipped (e.g. a conditional that evaluated false).
-	Conclusion_RUN_CONCLUSION_SKIPPED Conclusion = 4
+	Conclusion_CONCLUSION_SKIPPED Conclusion = 4
 	// Exceeded its time limit.
-	Conclusion_RUN_CONCLUSION_TIMED_OUT Conclusion = 5
+	Conclusion_CONCLUSION_TIMED_OUT Conclusion = 5
 	// Requires manual intervention to proceed.
-	Conclusion_RUN_CONCLUSION_ACTION_REQUIRED Conclusion = 6
+	Conclusion_CONCLUSION_ACTION_REQUIRED Conclusion = 6
 	// Completed without a positive or negative result.
-	Conclusion_RUN_CONCLUSION_NEUTRAL Conclusion = 7
+	Conclusion_CONCLUSION_NEUTRAL Conclusion = 7
 	// Superseded by a newer run before completing.
-	Conclusion_RUN_CONCLUSION_STALE Conclusion = 8
+	Conclusion_CONCLUSION_STALE Conclusion = 8
 )
 
 // Enum value maps for Conclusion.
 var (
 	Conclusion_name = map[int32]string{
-		0: "RUN_CONCLUSION_UNSPECIFIED",
-		1: "RUN_CONCLUSION_SUCCESS",
-		2: "RUN_CONCLUSION_FAILURE",
-		3: "RUN_CONCLUSION_CANCELLED",
-		4: "RUN_CONCLUSION_SKIPPED",
-		5: "RUN_CONCLUSION_TIMED_OUT",
-		6: "RUN_CONCLUSION_ACTION_REQUIRED",
-		7: "RUN_CONCLUSION_NEUTRAL",
-		8: "RUN_CONCLUSION_STALE",
+		0: "CONCLUSION_UNSPECIFIED",
+		1: "CONCLUSION_SUCCESS",
+		2: "CONCLUSION_FAILURE",
+		3: "CONCLUSION_CANCELLED",
+		4: "CONCLUSION_SKIPPED",
+		5: "CONCLUSION_TIMED_OUT",
+		6: "CONCLUSION_ACTION_REQUIRED",
+		7: "CONCLUSION_NEUTRAL",
+		8: "CONCLUSION_STALE",
 	}
 	Conclusion_value = map[string]int32{
-		"RUN_CONCLUSION_UNSPECIFIED":     0,
-		"RUN_CONCLUSION_SUCCESS":         1,
-		"RUN_CONCLUSION_FAILURE":         2,
-		"RUN_CONCLUSION_CANCELLED":       3,
-		"RUN_CONCLUSION_SKIPPED":         4,
-		"RUN_CONCLUSION_TIMED_OUT":       5,
-		"RUN_CONCLUSION_ACTION_REQUIRED": 6,
-		"RUN_CONCLUSION_NEUTRAL":         7,
-		"RUN_CONCLUSION_STALE":           8,
+		"CONCLUSION_UNSPECIFIED":     0,
+		"CONCLUSION_SUCCESS":         1,
+		"CONCLUSION_FAILURE":         2,
+		"CONCLUSION_CANCELLED":       3,
+		"CONCLUSION_SKIPPED":         4,
+		"CONCLUSION_TIMED_OUT":       5,
+		"CONCLUSION_ACTION_REQUIRED": 6,
+		"CONCLUSION_NEUTRAL":         7,
+		"CONCLUSION_STALE":           8,
 	}
 )
 
@@ -148,11 +373,11 @@ func (x Conclusion) String() string {
 }
 
 func (Conclusion) Descriptor() protoreflect.EnumDescriptor {
-	return file_carabiner_core_v1_events_proto_enumTypes[1].Descriptor()
+	return file_carabiner_core_v1_events_proto_enumTypes[4].Descriptor()
 }
 
 func (Conclusion) Type() protoreflect.EnumType {
-	return &file_carabiner_core_v1_events_proto_enumTypes[1]
+	return &file_carabiner_core_v1_events_proto_enumTypes[4]
 }
 
 func (x Conclusion) Number() protoreflect.EnumNumber {
@@ -161,53 +386,648 @@ func (x Conclusion) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Conclusion.Descriptor instead.
 func (Conclusion) EnumDescriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{4}
+}
+
+// ActorType is the kind of an actor.
+type ActorType int32
+
+const (
+	// Unspecified / not set.
+	ActorType_ACTOR_TYPE_UNSPECIFIED ActorType = 0
+	// A human user.
+	ActorType_ACTOR_TYPE_USER ActorType = 1
+	// An automation bot (e.g. github-actions[bot]).
+	ActorType_ACTOR_TYPE_BOT ActorType = 2
+	// An application/integration acting on its own behalf.
+	ActorType_ACTOR_TYPE_APP ActorType = 3
+	// A service account.
+	ActorType_ACTOR_TYPE_SERVICE_ACCOUNT ActorType = 4
+)
+
+// Enum value maps for ActorType.
+var (
+	ActorType_name = map[int32]string{
+		0: "ACTOR_TYPE_UNSPECIFIED",
+		1: "ACTOR_TYPE_USER",
+		2: "ACTOR_TYPE_BOT",
+		3: "ACTOR_TYPE_APP",
+		4: "ACTOR_TYPE_SERVICE_ACCOUNT",
+	}
+	ActorType_value = map[string]int32{
+		"ACTOR_TYPE_UNSPECIFIED":     0,
+		"ACTOR_TYPE_USER":            1,
+		"ACTOR_TYPE_BOT":             2,
+		"ACTOR_TYPE_APP":             3,
+		"ACTOR_TYPE_SERVICE_ACCOUNT": 4,
+	}
+)
+
+func (x ActorType) Enum() *ActorType {
+	p := new(ActorType)
+	*p = x
+	return p
+}
+
+func (x ActorType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ActorType) Descriptor() protoreflect.EnumDescriptor {
+	return file_carabiner_core_v1_events_proto_enumTypes[5].Descriptor()
+}
+
+func (ActorType) Type() protoreflect.EnumType {
+	return &file_carabiner_core_v1_events_proto_enumTypes[5]
+}
+
+func (x ActorType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ActorType.Descriptor instead.
+func (ActorType) EnumDescriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{5}
+}
+
+// SubjectRole is the typed relationship from an origin to a related subject. The
+// set is extensible as new relationships are needed.
+type SubjectRole int32
+
+const (
+	// Unspecified / not set.
+	SubjectRole_SUBJECT_ROLE_UNSPECIFIED SubjectRole = 0
+	// The related subject is the repository the origin belongs to.
+	SubjectRole_SUBJECT_ROLE_IN_REPOSITORY SubjectRole = 1
+	// The related subject is the branch the origin landed on.
+	SubjectRole_SUBJECT_ROLE_ON_BRANCH SubjectRole = 2
+	// The related subject is a change's source branch.
+	SubjectRole_SUBJECT_ROLE_SOURCE_BRANCH SubjectRole = 3
+	// The related subject is a change's target branch.
+	SubjectRole_SUBJECT_ROLE_TARGET_BRANCH SubjectRole = 4
+	// The related subject is the head revision.
+	SubjectRole_SUBJECT_ROLE_HEAD SubjectRole = 5
+	// The related subject is the base revision.
+	SubjectRole_SUBJECT_ROLE_BASE SubjectRole = 6
+	// The related subject is a parent revision (a commit parent).
+	SubjectRole_SUBJECT_ROLE_PARENT SubjectRole = 7
+	// The related subject is a merge revision (a merge commit).
+	SubjectRole_SUBJECT_ROLE_MERGE SubjectRole = 8
+	// The related subject is the revision a tag points to.
+	SubjectRole_SUBJECT_ROLE_TAGGED SubjectRole = 9
+)
+
+// Enum value maps for SubjectRole.
+var (
+	SubjectRole_name = map[int32]string{
+		0: "SUBJECT_ROLE_UNSPECIFIED",
+		1: "SUBJECT_ROLE_IN_REPOSITORY",
+		2: "SUBJECT_ROLE_ON_BRANCH",
+		3: "SUBJECT_ROLE_SOURCE_BRANCH",
+		4: "SUBJECT_ROLE_TARGET_BRANCH",
+		5: "SUBJECT_ROLE_HEAD",
+		6: "SUBJECT_ROLE_BASE",
+		7: "SUBJECT_ROLE_PARENT",
+		8: "SUBJECT_ROLE_MERGE",
+		9: "SUBJECT_ROLE_TAGGED",
+	}
+	SubjectRole_value = map[string]int32{
+		"SUBJECT_ROLE_UNSPECIFIED":   0,
+		"SUBJECT_ROLE_IN_REPOSITORY": 1,
+		"SUBJECT_ROLE_ON_BRANCH":     2,
+		"SUBJECT_ROLE_SOURCE_BRANCH": 3,
+		"SUBJECT_ROLE_TARGET_BRANCH": 4,
+		"SUBJECT_ROLE_HEAD":          5,
+		"SUBJECT_ROLE_BASE":          6,
+		"SUBJECT_ROLE_PARENT":        7,
+		"SUBJECT_ROLE_MERGE":         8,
+		"SUBJECT_ROLE_TAGGED":        9,
+	}
+)
+
+func (x SubjectRole) Enum() *SubjectRole {
+	p := new(SubjectRole)
+	*p = x
+	return p
+}
+
+func (x SubjectRole) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SubjectRole) Descriptor() protoreflect.EnumDescriptor {
+	return file_carabiner_core_v1_events_proto_enumTypes[6].Descriptor()
+}
+
+func (SubjectRole) Type() protoreflect.EnumType {
+	return &file_carabiner_core_v1_events_proto_enumTypes[6]
+}
+
+func (x SubjectRole) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SubjectRole.Descriptor instead.
+func (SubjectRole) EnumDescriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{6}
+}
+
+// ChangeState is the lifecycle state of a change (pull/merge request).
+type ChangeState int32
+
+const (
+	// Unspecified / not set.
+	ChangeState_CHANGE_STATE_UNSPECIFIED ChangeState = 0
+	// Open and awaiting review/merge.
+	ChangeState_CHANGE_STATE_OPEN ChangeState = 1
+	// Open but marked as a draft / work in progress.
+	ChangeState_CHANGE_STATE_DRAFT ChangeState = 2
+	// Merged into its target.
+	ChangeState_CHANGE_STATE_MERGED ChangeState = 3
+	// Closed without merging.
+	ChangeState_CHANGE_STATE_CLOSED ChangeState = 4
+)
+
+// Enum value maps for ChangeState.
+var (
+	ChangeState_name = map[int32]string{
+		0: "CHANGE_STATE_UNSPECIFIED",
+		1: "CHANGE_STATE_OPEN",
+		2: "CHANGE_STATE_DRAFT",
+		3: "CHANGE_STATE_MERGED",
+		4: "CHANGE_STATE_CLOSED",
+	}
+	ChangeState_value = map[string]int32{
+		"CHANGE_STATE_UNSPECIFIED": 0,
+		"CHANGE_STATE_OPEN":        1,
+		"CHANGE_STATE_DRAFT":       2,
+		"CHANGE_STATE_MERGED":      3,
+		"CHANGE_STATE_CLOSED":      4,
+	}
+)
+
+func (x ChangeState) Enum() *ChangeState {
+	p := new(ChangeState)
+	*p = x
+	return p
+}
+
+func (x ChangeState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ChangeState) Descriptor() protoreflect.EnumDescriptor {
+	return file_carabiner_core_v1_events_proto_enumTypes[7].Descriptor()
+}
+
+func (ChangeState) Type() protoreflect.EnumType {
+	return &file_carabiner_core_v1_events_proto_enumTypes[7]
+}
+
+func (x ChangeState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ChangeState.Descriptor instead.
+func (ChangeState) EnumDescriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{7}
+}
+
+// Event is the canonical envelope every system link emits. It follows the
+// CDEvents model: a context (who emitted what, when, uniquely), a single
+// principal subject (the origin the event is about), and the related subjects
+// reachable from it. The CDEvents wire/JSON binding is rendered from this
+// message at emission time; this proto is the internal representation.
+type Event struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// id is a unique identifier for this single emission (a UUID). Two events
+	// describing the same object get distinct ids; it is the dedup/idempotency
+	// key. Maps to the CDEvents context id.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// source identifies the producer that emitted the event (the system-link
+	// instance), e.g. "/carabiner/syslink-github". It is NOT the origin/subject;
+	// it is used for provenance and trust. Maps to the CDEvents context source.
+	Source string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
+	// type is the structured event type (subject + predicate). It renders to the
+	// canonical CDEvents type string (dev.cdevents.* for standard subjects,
+	// dev.carabiner.* for extensions) at emission time.
+	Type *EventType `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
+	// timestamp is when the event occurred. For run lifecycle events it is the
+	// time of the transition (a started event carries the start time, etc.).
+	Timestamp *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	// subject is the principal subject: the origin the event is about, carrying
+	// its full data. Exactly one per event; its kind matches type.subject.
+	Subject *Subject `protobuf:"bytes,5,opt,name=subject,proto3" json:"subject,omitempty"`
+	// related are the subjects reachable from the origin (its neighborhood):
+	// coordinate-only descriptors an attester selects from to choose what to sign
+	// over. They carry no payload data — an attester fetches what it needs.
+	Related []*RelatedSubject `protobuf:"bytes,6,rep,name=related,proto3" json:"related,omitempty"`
+	// system_data carries opaque, system-specific detail keyed by system name
+	// (e.g. "github", "gitlab"). It is owned and populated by the producing
+	// system link; core does not interpret it.
+	SystemData    map[string]*structpb.Struct `protobuf:"bytes,7,rep,name=system_data,json=systemData,proto3" json:"system_data,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Event) Reset() {
+	*x = Event{}
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Event) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Event) ProtoMessage() {}
+
+func (x *Event) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Event.ProtoReflect.Descriptor instead.
+func (*Event) Descriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *Event) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Event) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *Event) GetType() *EventType {
+	if x != nil {
+		return x.Type
+	}
+	return nil
+}
+
+func (x *Event) GetTimestamp() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Timestamp
+	}
+	return nil
+}
+
+func (x *Event) GetSubject() *Subject {
+	if x != nil {
+		return x.Subject
+	}
+	return nil
+}
+
+func (x *Event) GetRelated() []*RelatedSubject {
+	if x != nil {
+		return x.Related
+	}
+	return nil
+}
+
+func (x *Event) GetSystemData() map[string]*structpb.Struct {
+	if x != nil {
+		return x.SystemData
+	}
+	return nil
+}
+
+// EventType is the structured event type. The canonical CDEvents type string
+// (dev.<namespace>.<subject>.<predicate>.<version>) is derived from it on wire
+// emission. Not every (subject, predicate) pair is valid; combinations are
+// checked when an event is built.
+type EventType struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// subject is the kind of object the event is about.
+	Subject SubjectType `protobuf:"varint,1,opt,name=subject,proto3,enum=carabiner.core.v1.SubjectType" json:"subject,omitempty"`
+	// predicate is the lifecycle verb (the transition the event reports).
+	Predicate     Predicate `protobuf:"varint,2,opt,name=predicate,proto3,enum=carabiner.core.v1.Predicate" json:"predicate,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EventType) Reset() {
+	*x = EventType{}
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EventType) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EventType) ProtoMessage() {}
+
+func (x *EventType) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EventType.ProtoReflect.Descriptor instead.
+func (*EventType) Descriptor() ([]byte, []int) {
 	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{1}
 }
 
-// PipelineRun captures a single execution of a pipeline (e.g. a GitHub Actions
-// workflow run). Its status and conclusion are updated as the run progresses.
+func (x *EventType) GetSubject() SubjectType {
+	if x != nil {
+		return x.Subject
+	}
+	return SubjectType_SUBJECT_TYPE_UNSPECIFIED
+}
+
+func (x *EventType) GetPredicate() Predicate {
+	if x != nil {
+		return x.Predicate
+	}
+	return Predicate_PREDICATE_UNSPECIFIED
+}
+
+// Subject is the principal subject of an event: the origin it is about, with its
+// full typed data. The data oneof case determines the subject kind and always
+// agrees with the owning event's type.subject. A subject is either an occurrence
+// (a run, a revision, …) or a catalog object (a Repository). Within an
+// occurrence message, fields numbered 1-9 are the CDEvents-standard content and
+// 10+ are the carabiner generalized extension; the split is applied only when
+// rendering to the wire.
+type Subject struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// id is the subject's identifier in the terms of its kind (a UUID for runs, a
+	// commit sha for a revision, a PR number-or-id for a change, …).
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// source is where the subject lives, when meaningful (e.g. the repository
+	// URI). Optional.
+	Source string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
+	// data is the subject's typed payload; the case selects the subject kind.
+	//
+	// Types that are valid to be assigned to Data:
+	//
+	//	*Subject_PipelineRun
+	//	*Subject_TaskRun
+	//	*Subject_StepRun
+	//	*Subject_Repository
+	//	*Subject_Branch
+	//	*Subject_Change
+	//	*Subject_Revision
+	//	*Subject_Tag
+	Data          isSubject_Data `protobuf_oneof:"data"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Subject) Reset() {
+	*x = Subject{}
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Subject) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Subject) ProtoMessage() {}
+
+func (x *Subject) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Subject.ProtoReflect.Descriptor instead.
+func (*Subject) Descriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Subject) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Subject) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *Subject) GetData() isSubject_Data {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *Subject) GetPipelineRun() *PipelineRun {
+	if x != nil {
+		if x, ok := x.Data.(*Subject_PipelineRun); ok {
+			return x.PipelineRun
+		}
+	}
+	return nil
+}
+
+func (x *Subject) GetTaskRun() *TaskRun {
+	if x != nil {
+		if x, ok := x.Data.(*Subject_TaskRun); ok {
+			return x.TaskRun
+		}
+	}
+	return nil
+}
+
+func (x *Subject) GetStepRun() *StepRun {
+	if x != nil {
+		if x, ok := x.Data.(*Subject_StepRun); ok {
+			return x.StepRun
+		}
+	}
+	return nil
+}
+
+func (x *Subject) GetRepository() *Repository {
+	if x != nil {
+		if x, ok := x.Data.(*Subject_Repository); ok {
+			return x.Repository
+		}
+	}
+	return nil
+}
+
+func (x *Subject) GetBranch() *Branch {
+	if x != nil {
+		if x, ok := x.Data.(*Subject_Branch); ok {
+			return x.Branch
+		}
+	}
+	return nil
+}
+
+func (x *Subject) GetChange() *Change {
+	if x != nil {
+		if x, ok := x.Data.(*Subject_Change); ok {
+			return x.Change
+		}
+	}
+	return nil
+}
+
+func (x *Subject) GetRevision() *Revision {
+	if x != nil {
+		if x, ok := x.Data.(*Subject_Revision); ok {
+			return x.Revision
+		}
+	}
+	return nil
+}
+
+func (x *Subject) GetTag() *Tag {
+	if x != nil {
+		if x, ok := x.Data.(*Subject_Tag); ok {
+			return x.Tag
+		}
+	}
+	return nil
+}
+
+type isSubject_Data interface {
+	isSubject_Data()
+}
+
+type Subject_PipelineRun struct {
+	// pipeline_run is a pipeline execution (a CI/CD workflow run).
+	PipelineRun *PipelineRun `protobuf:"bytes,10,opt,name=pipeline_run,json=pipelineRun,proto3,oneof"`
+}
+
+type Subject_TaskRun struct {
+	// task_run is a task execution within a pipeline run.
+	TaskRun *TaskRun `protobuf:"bytes,11,opt,name=task_run,json=taskRun,proto3,oneof"`
+}
+
+type Subject_StepRun struct {
+	// step_run is a step execution within a task run (carabiner extension).
+	StepRun *StepRun `protobuf:"bytes,12,opt,name=step_run,json=stepRun,proto3,oneof"`
+}
+
+type Subject_Repository struct {
+	// repository is a source-code repository (the catalog object).
+	Repository *Repository `protobuf:"bytes,13,opt,name=repository,proto3,oneof"`
+}
+
+type Subject_Branch struct {
+	// branch is a branch within a repository.
+	Branch *Branch `protobuf:"bytes,14,opt,name=branch,proto3,oneof"`
+}
+
+type Subject_Change struct {
+	// change is a proposed change (a pull/merge request).
+	Change *Change `protobuf:"bytes,15,opt,name=change,proto3,oneof"`
+}
+
+type Subject_Revision struct {
+	// revision is a single source revision/commit (carabiner extension).
+	Revision *Revision `protobuf:"bytes,16,opt,name=revision,proto3,oneof"`
+}
+
+type Subject_Tag struct {
+	// tag is a tag/release ref (carabiner extension).
+	Tag *Tag `protobuf:"bytes,17,opt,name=tag,proto3,oneof"`
+}
+
+func (*Subject_PipelineRun) isSubject_Data() {}
+
+func (*Subject_TaskRun) isSubject_Data() {}
+
+func (*Subject_StepRun) isSubject_Data() {}
+
+func (*Subject_Repository) isSubject_Data() {}
+
+func (*Subject_Branch) isSubject_Data() {}
+
+func (*Subject_Change) isSubject_Data() {}
+
+func (*Subject_Revision) isSubject_Data() {}
+
+func (*Subject_Tag) isSubject_Data() {}
+
+// PipelineRun is a single execution of a pipeline (e.g. a GitHub Actions
+// workflow run). It references its declared catalog Pipeline; the revision it
+// ran against is carried as a related subject, not embedded here.
 type PipelineRun struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Carabiner-assigned unique identifier.
-	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
-	// The pipeline that was run.
-	Pipeline *Pipeline `protobuf:"bytes,2,opt,name=pipeline,proto3" json:"pipeline,omitempty"`
+	// pipeline_name is the run's pipeline display name (CDEvents-standard).
+	PipelineName string `protobuf:"bytes,1,opt,name=pipeline_name,json=pipelineName,proto3" json:"pipeline_name,omitempty"`
+	// url is the run's web URL in the source system (CDEvents-standard).
+	Url string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	// outcome is the run's CDEvents-standard outcome; meaningful once finished.
+	Outcome Outcome `protobuf:"varint,3,opt,name=outcome,proto3,enum=carabiner.core.v1.Outcome" json:"outcome,omitempty"`
+	// errors is a human-readable description of the failure, when finished with a
+	// non-success outcome (CDEvents-standard).
+	Errors string `protobuf:"bytes,4,opt,name=errors,proto3" json:"errors,omitempty"`
+	// status is the run's current lifecycle state (queued/started/finished); it
+	// mirrors the event predicate.
+	Status RunStatus `protobuf:"varint,10,opt,name=status,proto3,enum=carabiner.core.v1.RunStatus" json:"status,omitempty"`
 	// external_id is the run's stable identifier in its source system (e.g. a
-	// GitHub workflow run ID). The idempotency/lookup key for the run.
-	ExternalId string `protobuf:"bytes,3,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
-	// run_number is the source system's human-facing sequence number for the
-	// run within its pipeline.
-	RunNumber uint64 `protobuf:"varint,4,opt,name=run_number,json=runNumber,proto3" json:"run_number,omitempty"`
-	// run_attempt is the attempt counter for re-runs of the same run (starts at 1).
-	RunAttempt uint32 `protobuf:"varint,5,opt,name=run_attempt,json=runAttempt,proto3" json:"run_attempt,omitempty"`
-	// status is the run's current execution status.
-	Status RunStatus `protobuf:"varint,6,opt,name=status,proto3,enum=carabiner.core.v1.RunStatus" json:"status,omitempty"`
-	// conclusion is the run's outcome once completed.
-	Conclusion Conclusion `protobuf:"varint,7,opt,name=conclusion,proto3,enum=carabiner.core.v1.Conclusion" json:"conclusion,omitempty"`
-	// head_sha is the commit the run executed against.
-	HeadSha string `protobuf:"bytes,8,opt,name=head_sha,json=headSha,proto3" json:"head_sha,omitempty"`
-	// head_branch is the branch (or ref) the run executed against.
-	HeadBranch string `protobuf:"bytes,9,opt,name=head_branch,json=headBranch,proto3" json:"head_branch,omitempty"`
-	// event is the source-system event that triggered the run, e.g. "push",
-	// "pull_request" or "schedule".
-	Event string `protobuf:"bytes,10,opt,name=event,proto3" json:"event,omitempty"`
-	// actor is the identity that triggered the run (e.g. a username).
-	Actor string `protobuf:"bytes,11,opt,name=actor,proto3" json:"actor,omitempty"`
-	// url is the run's web URL in the source system.
-	Url string `protobuf:"bytes,12,opt,name=url,proto3" json:"url,omitempty"`
+	// GitHub workflow run ID). The universal lookup/idempotency key.
+	ExternalId string `protobuf:"bytes,11,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	// run_number is the source system's human-facing sequence number for the run.
+	// Optional: not every system assigns one.
+	RunNumber *uint64 `protobuf:"varint,12,opt,name=run_number,json=runNumber,proto3,oneof" json:"run_number,omitempty"`
+	// run_attempt is the attempt counter for re-runs of the same run. Optional.
+	RunAttempt *uint32 `protobuf:"varint,13,opt,name=run_attempt,json=runAttempt,proto3,oneof" json:"run_attempt,omitempty"`
+	// conclusion is the precise carabiner outcome, retaining detail (cancelled,
+	// skipped, timed out, …) that the standard 3-value outcome cannot express.
+	Conclusion Conclusion `protobuf:"varint,14,opt,name=conclusion,proto3,enum=carabiner.core.v1.Conclusion" json:"conclusion,omitempty"`
+	// triggered_by is the actor that triggered the run.
+	TriggeredBy *Actor `protobuf:"bytes,15,opt,name=triggered_by,json=triggeredBy,proto3" json:"triggered_by,omitempty"`
 	// created_at is when the run was created/queued.
-	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	// started_at is when the run began executing.
-	StartedAt *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	StartedAt *timestamppb.Timestamp `protobuf:"bytes,17,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
 	// completed_at is when the run finished.
-	CompletedAt   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	CompletedAt *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	// pipeline references the declared catalog Pipeline this run is an execution
+	// of (a pointer, not the object).
+	Pipeline      *Reference `protobuf:"bytes,19,opt,name=pipeline,proto3" json:"pipeline,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PipelineRun) Reset() {
 	*x = PipelineRun{}
-	mi := &file_carabiner_core_v1_events_proto_msgTypes[0]
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -219,7 +1039,7 @@ func (x *PipelineRun) String() string {
 func (*PipelineRun) ProtoMessage() {}
 
 func (x *PipelineRun) ProtoReflect() protoreflect.Message {
-	mi := &file_carabiner_core_v1_events_proto_msgTypes[0]
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -232,21 +1052,42 @@ func (x *PipelineRun) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PipelineRun.ProtoReflect.Descriptor instead.
 func (*PipelineRun) Descriptor() ([]byte, []int) {
-	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{0}
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *PipelineRun) GetID() string {
+func (x *PipelineRun) GetPipelineName() string {
 	if x != nil {
-		return x.ID
+		return x.PipelineName
 	}
 	return ""
 }
 
-func (x *PipelineRun) GetPipeline() *Pipeline {
+func (x *PipelineRun) GetUrl() string {
 	if x != nil {
-		return x.Pipeline
+		return x.Url
 	}
-	return nil
+	return ""
+}
+
+func (x *PipelineRun) GetOutcome() Outcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return Outcome_OUTCOME_UNSPECIFIED
+}
+
+func (x *PipelineRun) GetErrors() string {
+	if x != nil {
+		return x.Errors
+	}
+	return ""
+}
+
+func (x *PipelineRun) GetStatus() RunStatus {
+	if x != nil {
+		return x.Status
+	}
+	return RunStatus_RUN_STATUS_UNSPECIFIED
 }
 
 func (x *PipelineRun) GetExternalId() string {
@@ -257,66 +1098,31 @@ func (x *PipelineRun) GetExternalId() string {
 }
 
 func (x *PipelineRun) GetRunNumber() uint64 {
-	if x != nil {
-		return x.RunNumber
+	if x != nil && x.RunNumber != nil {
+		return *x.RunNumber
 	}
 	return 0
 }
 
 func (x *PipelineRun) GetRunAttempt() uint32 {
-	if x != nil {
-		return x.RunAttempt
+	if x != nil && x.RunAttempt != nil {
+		return *x.RunAttempt
 	}
 	return 0
-}
-
-func (x *PipelineRun) GetStatus() RunStatus {
-	if x != nil {
-		return x.Status
-	}
-	return RunStatus_RUN_STATUS_UNSPECIFIED
 }
 
 func (x *PipelineRun) GetConclusion() Conclusion {
 	if x != nil {
 		return x.Conclusion
 	}
-	return Conclusion_RUN_CONCLUSION_UNSPECIFIED
+	return Conclusion_CONCLUSION_UNSPECIFIED
 }
 
-func (x *PipelineRun) GetHeadSha() string {
+func (x *PipelineRun) GetTriggeredBy() *Actor {
 	if x != nil {
-		return x.HeadSha
+		return x.TriggeredBy
 	}
-	return ""
-}
-
-func (x *PipelineRun) GetHeadBranch() string {
-	if x != nil {
-		return x.HeadBranch
-	}
-	return ""
-}
-
-func (x *PipelineRun) GetEvent() string {
-	if x != nil {
-		return x.Event
-	}
-	return ""
-}
-
-func (x *PipelineRun) GetActor() string {
-	if x != nil {
-		return x.Actor
-	}
-	return ""
-}
-
-func (x *PipelineRun) GetUrl() string {
-	if x != nil {
-		return x.Url
-	}
-	return ""
+	return nil
 }
 
 func (x *PipelineRun) GetCreatedAt() *timestamppb.Timestamp {
@@ -340,50 +1146,59 @@ func (x *PipelineRun) GetCompletedAt() *timestamppb.Timestamp {
 	return nil
 }
 
-// JobRun captures a single execution of a job within a pipeline run.
-type JobRun struct {
+func (x *PipelineRun) GetPipeline() *Reference {
+	if x != nil {
+		return x.Pipeline
+	}
+	return nil
+}
+
+// TaskRun is a single execution of a task within a pipeline run. It references
+// both its parent pipeline run and its declared catalog Task.
+type TaskRun struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Carabiner-assigned unique identifier.
-	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
-	// The declared job this run corresponds to, when known.
-	Job *Job `protobuf:"bytes,2,opt,name=job,proto3" json:"job,omitempty"`
-	// The pipeline run this job run belongs to.
-	PipelineRun *PipelineRun `protobuf:"bytes,3,opt,name=pipeline_run,json=pipelineRun,proto3" json:"pipeline_run,omitempty"`
-	// external_id is the job run's stable identifier in its source system (e.g.
-	// a GitHub job ID).
-	ExternalId string `protobuf:"bytes,4,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
-	// name is the job run's display name (may differ per run, e.g. matrix
-	// expansions like "build (ubuntu-latest)").
-	Name string `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
-	// status is the job run's current execution status.
-	Status RunStatus `protobuf:"varint,6,opt,name=status,proto3,enum=carabiner.core.v1.RunStatus" json:"status,omitempty"`
-	// conclusion is the job run's outcome once completed.
-	Conclusion Conclusion `protobuf:"varint,7,opt,name=conclusion,proto3,enum=carabiner.core.v1.Conclusion" json:"conclusion,omitempty"`
-	// url is the job run's web URL in the source system.
-	Url string `protobuf:"bytes,8,opt,name=url,proto3" json:"url,omitempty"`
-	// started_at is when the job began executing.
-	StartedAt *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
-	// completed_at is when the job finished.
-	CompletedAt   *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	// task_name is the task run's display name (CDEvents-standard).
+	TaskName string `protobuf:"bytes,1,opt,name=task_name,json=taskName,proto3" json:"task_name,omitempty"`
+	// url is the task run's web URL in the source system (CDEvents-standard).
+	Url string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	// outcome is the task run's CDEvents-standard outcome; meaningful once
+	// finished.
+	Outcome Outcome `protobuf:"varint,3,opt,name=outcome,proto3,enum=carabiner.core.v1.Outcome" json:"outcome,omitempty"`
+	// errors is a human-readable failure description when finished with a
+	// non-success outcome (CDEvents-standard).
+	Errors string `protobuf:"bytes,4,opt,name=errors,proto3" json:"errors,omitempty"`
+	// status is the task run's current lifecycle state; it mirrors the predicate.
+	Status RunStatus `protobuf:"varint,10,opt,name=status,proto3,enum=carabiner.core.v1.RunStatus" json:"status,omitempty"`
+	// external_id is the task run's stable identifier in its source system.
+	ExternalId string `protobuf:"bytes,11,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	// pipeline_run references the parent pipeline run (a pointer, not the object).
+	PipelineRun *Reference `protobuf:"bytes,12,opt,name=pipeline_run,json=pipelineRun,proto3" json:"pipeline_run,omitempty"`
+	// started_at is when the task began executing.
+	StartedAt *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	// completed_at is when the task finished.
+	CompletedAt *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	// task references the declared catalog Task this run is an execution of (a
+	// pointer, not the object).
+	Task          *Reference `protobuf:"bytes,15,opt,name=task,proto3" json:"task,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *JobRun) Reset() {
-	*x = JobRun{}
-	mi := &file_carabiner_core_v1_events_proto_msgTypes[1]
+func (x *TaskRun) Reset() {
+	*x = TaskRun{}
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *JobRun) String() string {
+func (x *TaskRun) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*JobRun) ProtoMessage() {}
+func (*TaskRun) ProtoMessage() {}
 
-func (x *JobRun) ProtoReflect() protoreflect.Message {
-	mi := &file_carabiner_core_v1_events_proto_msgTypes[1]
+func (x *TaskRun) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -394,110 +1209,114 @@ func (x *JobRun) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use JobRun.ProtoReflect.Descriptor instead.
-func (*JobRun) Descriptor() ([]byte, []int) {
-	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use TaskRun.ProtoReflect.Descriptor instead.
+func (*TaskRun) Descriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *JobRun) GetID() string {
+func (x *TaskRun) GetTaskName() string {
 	if x != nil {
-		return x.ID
+		return x.TaskName
 	}
 	return ""
 }
 
-func (x *JobRun) GetJob() *Job {
-	if x != nil {
-		return x.Job
-	}
-	return nil
-}
-
-func (x *JobRun) GetPipelineRun() *PipelineRun {
-	if x != nil {
-		return x.PipelineRun
-	}
-	return nil
-}
-
-func (x *JobRun) GetExternalId() string {
-	if x != nil {
-		return x.ExternalId
-	}
-	return ""
-}
-
-func (x *JobRun) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *JobRun) GetStatus() RunStatus {
-	if x != nil {
-		return x.Status
-	}
-	return RunStatus_RUN_STATUS_UNSPECIFIED
-}
-
-func (x *JobRun) GetConclusion() Conclusion {
-	if x != nil {
-		return x.Conclusion
-	}
-	return Conclusion_RUN_CONCLUSION_UNSPECIFIED
-}
-
-func (x *JobRun) GetUrl() string {
+func (x *TaskRun) GetUrl() string {
 	if x != nil {
 		return x.Url
 	}
 	return ""
 }
 
-func (x *JobRun) GetStartedAt() *timestamppb.Timestamp {
+func (x *TaskRun) GetOutcome() Outcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return Outcome_OUTCOME_UNSPECIFIED
+}
+
+func (x *TaskRun) GetErrors() string {
+	if x != nil {
+		return x.Errors
+	}
+	return ""
+}
+
+func (x *TaskRun) GetStatus() RunStatus {
+	if x != nil {
+		return x.Status
+	}
+	return RunStatus_RUN_STATUS_UNSPECIFIED
+}
+
+func (x *TaskRun) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
+	}
+	return ""
+}
+
+func (x *TaskRun) GetPipelineRun() *Reference {
+	if x != nil {
+		return x.PipelineRun
+	}
+	return nil
+}
+
+func (x *TaskRun) GetStartedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.StartedAt
 	}
 	return nil
 }
 
-func (x *JobRun) GetCompletedAt() *timestamppb.Timestamp {
+func (x *TaskRun) GetCompletedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CompletedAt
 	}
 	return nil
 }
 
-// StepRun captures a single execution of a step within a job run. The first
-// step run with RUN_CONCLUSION_FAILURE pinpoints where a job failed.
+func (x *TaskRun) GetTask() *Reference {
+	if x != nil {
+		return x.Task
+	}
+	return nil
+}
+
+// StepRun is a single execution of a step within a task run. Steps have no
+// CDEvents subject; this is a carabiner extension (events use the
+// dev.carabiner.* namespace). It references both its parent task run and its
+// declared catalog Step.
 type StepRun struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Carabiner-assigned unique identifier.
-	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
-	// The declared step this run corresponds to, when known.
-	Step *Step `protobuf:"bytes,2,opt,name=step,proto3" json:"step,omitempty"`
-	// The job run this step run belongs to.
-	JobRun *JobRun `protobuf:"bytes,3,opt,name=job_run,json=jobRun,proto3" json:"job_run,omitempty"`
 	// name is the step run's display name.
-	Name string `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
-	// number is the step's 1-based position within its job.
-	Number uint32 `protobuf:"varint,5,opt,name=number,proto3" json:"number,omitempty"`
-	// status is the step run's current execution status.
-	Status RunStatus `protobuf:"varint,6,opt,name=status,proto3,enum=carabiner.core.v1.RunStatus" json:"status,omitempty"`
-	// conclusion is the step run's outcome once completed.
-	Conclusion Conclusion `protobuf:"varint,7,opt,name=conclusion,proto3,enum=carabiner.core.v1.Conclusion" json:"conclusion,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// outcome is the step run's outcome; meaningful once finished.
+	Outcome Outcome `protobuf:"varint,2,opt,name=outcome,proto3,enum=carabiner.core.v1.Outcome" json:"outcome,omitempty"`
+	// errors is a human-readable failure description when finished with a
+	// non-success outcome.
+	Errors string `protobuf:"bytes,3,opt,name=errors,proto3" json:"errors,omitempty"`
+	// status is the step run's current lifecycle state; it mirrors the predicate.
+	Status RunStatus `protobuf:"varint,10,opt,name=status,proto3,enum=carabiner.core.v1.RunStatus" json:"status,omitempty"`
+	// number is the step's 1-based position within its task run. Optional.
+	Number *uint32 `protobuf:"varint,11,opt,name=number,proto3,oneof" json:"number,omitempty"`
+	// task_run references the parent task run (a pointer, not the object).
+	TaskRun *Reference `protobuf:"bytes,12,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
 	// started_at is when the step began executing.
-	StartedAt *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	StartedAt *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
 	// completed_at is when the step finished.
-	CompletedAt   *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	CompletedAt *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	// step references the declared catalog Step this run is an execution of (a
+	// pointer, not the object).
+	Step          *Reference `protobuf:"bytes,15,opt,name=step,proto3" json:"step,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *StepRun) Reset() {
 	*x = StepRun{}
-	mi := &file_carabiner_core_v1_events_proto_msgTypes[2]
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -509,7 +1328,7 @@ func (x *StepRun) String() string {
 func (*StepRun) ProtoMessage() {}
 
 func (x *StepRun) ProtoReflect() protoreflect.Message {
-	mi := &file_carabiner_core_v1_events_proto_msgTypes[2]
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -522,28 +1341,7 @@ func (x *StepRun) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StepRun.ProtoReflect.Descriptor instead.
 func (*StepRun) Descriptor() ([]byte, []int) {
-	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *StepRun) GetID() string {
-	if x != nil {
-		return x.ID
-	}
-	return ""
-}
-
-func (x *StepRun) GetStep() *Step {
-	if x != nil {
-		return x.Step
-	}
-	return nil
-}
-
-func (x *StepRun) GetJobRun() *JobRun {
-	if x != nil {
-		return x.JobRun
-	}
-	return nil
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *StepRun) GetName() string {
@@ -553,11 +1351,18 @@ func (x *StepRun) GetName() string {
 	return ""
 }
 
-func (x *StepRun) GetNumber() uint32 {
+func (x *StepRun) GetOutcome() Outcome {
 	if x != nil {
-		return x.Number
+		return x.Outcome
 	}
-	return 0
+	return Outcome_OUTCOME_UNSPECIFIED
+}
+
+func (x *StepRun) GetErrors() string {
+	if x != nil {
+		return x.Errors
+	}
+	return ""
 }
 
 func (x *StepRun) GetStatus() RunStatus {
@@ -567,11 +1372,18 @@ func (x *StepRun) GetStatus() RunStatus {
 	return RunStatus_RUN_STATUS_UNSPECIFIED
 }
 
-func (x *StepRun) GetConclusion() Conclusion {
-	if x != nil {
-		return x.Conclusion
+func (x *StepRun) GetNumber() uint32 {
+	if x != nil && x.Number != nil {
+		return *x.Number
 	}
-	return Conclusion_RUN_CONCLUSION_UNSPECIFIED
+	return 0
+}
+
+func (x *StepRun) GetTaskRun() *Reference {
+	if x != nil {
+		return x.TaskRun
+	}
+	return nil
 }
 
 func (x *StepRun) GetStartedAt() *timestamppb.Timestamp {
@@ -588,81 +1400,920 @@ func (x *StepRun) GetCompletedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *StepRun) GetStep() *Reference {
+	if x != nil {
+		return x.Step
+	}
+	return nil
+}
+
+// Branch is the data for a branch subject. The repository it belongs to is
+// carried as a related subject.
+type Branch struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// name is the branch's short name, e.g. "main".
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// ref is the branch's full ref, e.g. "refs/heads/main".
+	Ref           string `protobuf:"bytes,2,opt,name=ref,proto3" json:"ref,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Branch) Reset() {
+	*x = Branch{}
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Branch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Branch) ProtoMessage() {}
+
+func (x *Branch) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Branch.ProtoReflect.Descriptor instead.
+func (*Branch) Descriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *Branch) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Branch) GetRef() string {
+	if x != nil {
+		return x.Ref
+	}
+	return ""
+}
+
+// Change is a proposed change (a pull/merge request). The branches and revisions
+// it involves are carried as related subjects.
+type Change struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// external_id is the change's stable identifier in its source system.
+	ExternalId string `protobuf:"bytes,1,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	// number is the change's human-facing number (e.g. a PR/MR number). Optional.
+	Number *uint64 `protobuf:"varint,2,opt,name=number,proto3,oneof" json:"number,omitempty"`
+	// title is the change's title.
+	Title string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	// description is the change's body/description.
+	Description string `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	// url is the change's web URL.
+	Url string `protobuf:"bytes,5,opt,name=url,proto3" json:"url,omitempty"`
+	// author is the actor that opened the change.
+	Author *Actor `protobuf:"bytes,10,opt,name=author,proto3" json:"author,omitempty"`
+	// state is the change's lifecycle state.
+	State         ChangeState `protobuf:"varint,11,opt,name=state,proto3,enum=carabiner.core.v1.ChangeState" json:"state,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Change) Reset() {
+	*x = Change{}
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Change) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Change) ProtoMessage() {}
+
+func (x *Change) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Change.ProtoReflect.Descriptor instead.
+func (*Change) Descriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *Change) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
+	}
+	return ""
+}
+
+func (x *Change) GetNumber() uint64 {
+	if x != nil && x.Number != nil {
+		return *x.Number
+	}
+	return 0
+}
+
+func (x *Change) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *Change) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *Change) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *Change) GetAuthor() *Actor {
+	if x != nil {
+		return x.Author
+	}
+	return nil
+}
+
+func (x *Change) GetState() ChangeState {
+	if x != nil {
+		return x.State
+	}
+	return ChangeState_CHANGE_STATE_UNSPECIFIED
+}
+
+// Revision is a single source revision (e.g. a git commit). Revisions have no
+// CDEvents subject; this is a carabiner extension (events use the
+// dev.carabiner.* namespace). The term "revision" is VCS-agnostic; the concrete
+// identity lives in the subject descriptor's digest (e.g. a gitCommit digest).
+// The branch, parents and repository are carried as related subjects.
+type Revision struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// sha is the revision identifier (e.g. a git commit sha).
+	Sha string `protobuf:"bytes,1,opt,name=sha,proto3" json:"sha,omitempty"`
+	// message is the revision's commit message.
+	Message string `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	// url is the revision's web URL.
+	Url string `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
+	// author is the actor that authored the revision.
+	Author *Actor `protobuf:"bytes,10,opt,name=author,proto3" json:"author,omitempty"`
+	// committer is the actor that committed the revision.
+	Committer *Actor `protobuf:"bytes,11,opt,name=committer,proto3" json:"committer,omitempty"`
+	// tree_sha is the identifier of the revision's tree, when available.
+	TreeSha string `protobuf:"bytes,12,opt,name=tree_sha,json=treeSha,proto3" json:"tree_sha,omitempty"`
+	// authored_at is when the revision was authored.
+	AuthoredAt *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=authored_at,json=authoredAt,proto3" json:"authored_at,omitempty"`
+	// committed_at is when the revision was committed.
+	CommittedAt   *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=committed_at,json=committedAt,proto3" json:"committed_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Revision) Reset() {
+	*x = Revision{}
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Revision) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Revision) ProtoMessage() {}
+
+func (x *Revision) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Revision.ProtoReflect.Descriptor instead.
+func (*Revision) Descriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *Revision) GetSha() string {
+	if x != nil {
+		return x.Sha
+	}
+	return ""
+}
+
+func (x *Revision) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *Revision) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *Revision) GetAuthor() *Actor {
+	if x != nil {
+		return x.Author
+	}
+	return nil
+}
+
+func (x *Revision) GetCommitter() *Actor {
+	if x != nil {
+		return x.Committer
+	}
+	return nil
+}
+
+func (x *Revision) GetTreeSha() string {
+	if x != nil {
+		return x.TreeSha
+	}
+	return ""
+}
+
+func (x *Revision) GetAuthoredAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.AuthoredAt
+	}
+	return nil
+}
+
+func (x *Revision) GetCommittedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CommittedAt
+	}
+	return nil
+}
+
+// Tag is a tag/release ref. Tags have no CDEvents subject; this is a carabiner
+// extension (events use the dev.carabiner.* namespace). The tagged revision and
+// repository are carried as related subjects.
+type Tag struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// name is the tag's name, e.g. "v1.2.0".
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// ref is the tag's full ref, e.g. "refs/tags/v1.2.0".
+	Ref string `protobuf:"bytes,2,opt,name=ref,proto3" json:"ref,omitempty"`
+	// annotated reports whether this is an annotated tag (vs a lightweight ref).
+	Annotated bool `protobuf:"varint,3,opt,name=annotated,proto3" json:"annotated,omitempty"`
+	// tagger is the actor that created the tag (for annotated tags).
+	Tagger *Actor `protobuf:"bytes,10,opt,name=tagger,proto3" json:"tagger,omitempty"`
+	// message is the tag's annotation message (for annotated tags).
+	Message       string `protobuf:"bytes,11,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Tag) Reset() {
+	*x = Tag{}
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Tag) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Tag) ProtoMessage() {}
+
+func (x *Tag) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Tag.ProtoReflect.Descriptor instead.
+func (*Tag) Descriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *Tag) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Tag) GetRef() string {
+	if x != nil {
+		return x.Ref
+	}
+	return ""
+}
+
+func (x *Tag) GetAnnotated() bool {
+	if x != nil {
+		return x.Annotated
+	}
+	return false
+}
+
+func (x *Tag) GetTagger() *Actor {
+	if x != nil {
+		return x.Tagger
+	}
+	return nil
+}
+
+func (x *Tag) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+// RelatedSubject is one node in the origin's neighborhood: a subject reachable
+// from the principal subject, carried as a coordinate-only descriptor so an
+// attester can select it and promote it to an attestation subject. It carries no
+// payload data; an attester fetches whatever depth it needs (a field to a full
+// revision tree) using the coordinates.
+type RelatedSubject struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// role is the typed relationship from the origin to this subject.
+	Role SubjectRole `protobuf:"varint,1,opt,name=role,proto3,enum=carabiner.core.v1.SubjectRole" json:"role,omitempty"`
+	// type is the kind of subject this is.
+	Type SubjectType `protobuf:"varint,2,opt,name=type,proto3,enum=carabiner.core.v1.SubjectType" json:"type,omitempty"`
+	// descriptor is the resolvable coordinate (uri and/or digest) plus
+	// annotations. It is content-free.
+	Descriptor_   *ResourceDescriptor `protobuf:"bytes,3,opt,name=descriptor,proto3" json:"descriptor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RelatedSubject) Reset() {
+	*x = RelatedSubject{}
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RelatedSubject) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RelatedSubject) ProtoMessage() {}
+
+func (x *RelatedSubject) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RelatedSubject.ProtoReflect.Descriptor instead.
+func (*RelatedSubject) Descriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *RelatedSubject) GetRole() SubjectRole {
+	if x != nil {
+		return x.Role
+	}
+	return SubjectRole_SUBJECT_ROLE_UNSPECIFIED
+}
+
+func (x *RelatedSubject) GetType() SubjectType {
+	if x != nil {
+		return x.Type
+	}
+	return SubjectType_SUBJECT_TYPE_UNSPECIFIED
+}
+
+func (x *RelatedSubject) GetDescriptor_() *ResourceDescriptor {
+	if x != nil {
+		return x.Descriptor_
+	}
+	return nil
+}
+
+// Reference is a pointer to another object by identity, used where a subject
+// relates to a parent or declared object without embedding it. It carries both
+// the carabiner id and the source-system id because a producer often references
+// an object by its source id before the carabiner id has been assigned.
+type Reference struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// id is the carabiner-assigned identifier, when known.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// source is the producer/source-system URI the referenced object lives in.
+	Source string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
+	// external_id is the referenced object's stable identifier in its source
+	// system. Used to resolve the reference before a carabiner id exists.
+	ExternalId    string `protobuf:"bytes,3,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Reference) Reset() {
+	*x = Reference{}
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Reference) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Reference) ProtoMessage() {}
+
+func (x *Reference) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Reference.ProtoReflect.Descriptor instead.
+func (*Reference) Descriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *Reference) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Reference) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *Reference) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
+	}
+	return ""
+}
+
+// Actor is a participant in an event (a run trigger-er, a change author, …). It
+// is the CI/CD-agnostic subset that any source system can populate; system-
+// specific actor detail belongs in the event's system_data.
+type Actor struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// id is the actor's stable identifier in its source system, as a string so it
+	// can hold a numeric id (GitHub/GitLab), a URI, or an email.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// username is the actor's handle/login.
+	Username string `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	// name is the actor's display name.
+	Name string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	// email is the actor's email address, when available.
+	Email string `protobuf:"bytes,4,opt,name=email,proto3" json:"email,omitempty"`
+	// type is the kind of actor (user, bot, app, …).
+	Type ActorType `protobuf:"varint,5,opt,name=type,proto3,enum=carabiner.core.v1.ActorType" json:"type,omitempty"`
+	// url is the actor's profile URL.
+	Url           string `protobuf:"bytes,6,opt,name=url,proto3" json:"url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Actor) Reset() {
+	*x = Actor{}
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Actor) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Actor) ProtoMessage() {}
+
+func (x *Actor) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Actor.ProtoReflect.Descriptor instead.
+func (*Actor) Descriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *Actor) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Actor) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *Actor) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Actor) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *Actor) GetType() ActorType {
+	if x != nil {
+		return x.Type
+	}
+	return ActorType_ACTOR_TYPE_UNSPECIFIED
+}
+
+func (x *Actor) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+// ResourceDescriptor identifies a resource by coordinates without carrying its
+// content. It mirrors the in-toto attestation ResourceDescriptor field-for-field
+// so a selected related subject can be promoted directly to an attestation
+// statement subject (a future swap to the upstream type is drop-in).
+type ResourceDescriptor struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// name is a human-readable identifier for the resource.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// uri is the resource's location (e.g. a VCS locator).
+	Uri string `protobuf:"bytes,2,opt,name=uri,proto3" json:"uri,omitempty"`
+	// digest is a set of cryptographic digests keyed by algorithm (e.g.
+	// "gitCommit" -> sha), identifying the resource's content.
+	Digest map[string]string `protobuf:"bytes,3,rep,name=digest,proto3" json:"digest,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// content is the resource's inline content. Left empty for coordinate-only
+	// related subjects.
+	Content []byte `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
+	// download_location is where the resource can be downloaded, when applicable.
+	DownloadLocation string `protobuf:"bytes,5,opt,name=download_location,json=downloadLocation,proto3" json:"download_location,omitempty"`
+	// media_type is the resource's media type, when applicable.
+	MediaType string `protobuf:"bytes,6,opt,name=media_type,json=mediaType,proto3" json:"media_type,omitempty"`
+	// annotations carries additional, machine-readable metadata about the
+	// resource (e.g. carabiner role/type/ids).
+	Annotations   *structpb.Struct `protobuf:"bytes,7,opt,name=annotations,proto3" json:"annotations,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceDescriptor) Reset() {
+	*x = ResourceDescriptor{}
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceDescriptor) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceDescriptor) ProtoMessage() {}
+
+func (x *ResourceDescriptor) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_events_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceDescriptor.ProtoReflect.Descriptor instead.
+func (*ResourceDescriptor) Descriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_events_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ResourceDescriptor) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ResourceDescriptor) GetUri() string {
+	if x != nil {
+		return x.Uri
+	}
+	return ""
+}
+
+func (x *ResourceDescriptor) GetDigest() map[string]string {
+	if x != nil {
+		return x.Digest
+	}
+	return nil
+}
+
+func (x *ResourceDescriptor) GetContent() []byte {
+	if x != nil {
+		return x.Content
+	}
+	return nil
+}
+
+func (x *ResourceDescriptor) GetDownloadLocation() string {
+	if x != nil {
+		return x.DownloadLocation
+	}
+	return ""
+}
+
+func (x *ResourceDescriptor) GetMediaType() string {
+	if x != nil {
+		return x.MediaType
+	}
+	return ""
+}
+
+func (x *ResourceDescriptor) GetAnnotations() *structpb.Struct {
+	if x != nil {
+		return x.Annotations
+	}
+	return nil
+}
+
 var File_carabiner_core_v1_events_proto protoreflect.FileDescriptor
 
 const file_carabiner_core_v1_events_proto_rawDesc = "" +
 	"\n" +
-	"\x1ecarabiner/core/v1/events.proto\x12\x11carabiner.core.v1\x1a\x1fcarabiner/core/v1/objects.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bbuf/validate/validate.proto\"\xe5\x04\n" +
-	"\vPipelineRun\x12\x18\n" +
-	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x127\n" +
-	"\bpipeline\x18\x02 \x01(\v2\x1b.carabiner.core.v1.PipelineR\bpipeline\x12\x1f\n" +
+	"\x1ecarabiner/core/v1/events.proto\x12\x11carabiner.core.v1\x1a\x1fcarabiner/core/v1/objects.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1bbuf/validate/validate.proto\"\xbb\x03\n" +
+	"\x05Event\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\x12\x16\n" +
+	"\x06source\x18\x02 \x01(\tR\x06source\x120\n" +
+	"\x04type\x18\x03 \x01(\v2\x1c.carabiner.core.v1.EventTypeR\x04type\x128\n" +
+	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x124\n" +
+	"\asubject\x18\x05 \x01(\v2\x1a.carabiner.core.v1.SubjectR\asubject\x12;\n" +
+	"\arelated\x18\x06 \x03(\v2!.carabiner.core.v1.RelatedSubjectR\arelated\x12I\n" +
+	"\vsystem_data\x18\a \x03(\v2(.carabiner.core.v1.Event.SystemDataEntryR\n" +
+	"systemData\x1aV\n" +
+	"\x0fSystemDataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12-\n" +
+	"\x05value\x18\x02 \x01(\v2\x17.google.protobuf.StructR\x05value:\x028\x01\"\x81\x01\n" +
+	"\tEventType\x128\n" +
+	"\asubject\x18\x01 \x01(\x0e2\x1e.carabiner.core.v1.SubjectTypeR\asubject\x12:\n" +
+	"\tpredicate\x18\x02 \x01(\x0e2\x1c.carabiner.core.v1.PredicateR\tpredicate\"\x82\x04\n" +
+	"\aSubject\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06source\x18\x02 \x01(\tR\x06source\x12C\n" +
+	"\fpipeline_run\x18\n" +
+	" \x01(\v2\x1e.carabiner.core.v1.PipelineRunH\x00R\vpipelineRun\x127\n" +
+	"\btask_run\x18\v \x01(\v2\x1a.carabiner.core.v1.TaskRunH\x00R\ataskRun\x127\n" +
+	"\bstep_run\x18\f \x01(\v2\x1a.carabiner.core.v1.StepRunH\x00R\astepRun\x12?\n" +
+	"\n" +
+	"repository\x18\r \x01(\v2\x1d.carabiner.core.v1.RepositoryH\x00R\n" +
+	"repository\x123\n" +
+	"\x06branch\x18\x0e \x01(\v2\x19.carabiner.core.v1.BranchH\x00R\x06branch\x123\n" +
+	"\x06change\x18\x0f \x01(\v2\x19.carabiner.core.v1.ChangeH\x00R\x06change\x129\n" +
+	"\brevision\x18\x10 \x01(\v2\x1b.carabiner.core.v1.RevisionH\x00R\brevision\x12*\n" +
+	"\x03tag\x18\x11 \x01(\v2\x16.carabiner.core.v1.TagH\x00R\x03tagB\x06\n" +
+	"\x04data\"\xbd\x05\n" +
+	"\vPipelineRun\x12#\n" +
+	"\rpipeline_name\x18\x01 \x01(\tR\fpipelineName\x12\x10\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\x124\n" +
+	"\aoutcome\x18\x03 \x01(\x0e2\x1a.carabiner.core.v1.OutcomeR\aoutcome\x12\x16\n" +
+	"\x06errors\x18\x04 \x01(\tR\x06errors\x124\n" +
+	"\x06status\x18\n" +
+	" \x01(\x0e2\x1c.carabiner.core.v1.RunStatusR\x06status\x12\x1f\n" +
+	"\vexternal_id\x18\v \x01(\tR\n" +
+	"externalId\x12\"\n" +
+	"\n" +
+	"run_number\x18\f \x01(\x04H\x00R\trunNumber\x88\x01\x01\x12$\n" +
+	"\vrun_attempt\x18\r \x01(\rH\x01R\n" +
+	"runAttempt\x88\x01\x01\x12=\n" +
+	"\n" +
+	"conclusion\x18\x0e \x01(\x0e2\x1d.carabiner.core.v1.ConclusionR\n" +
+	"conclusion\x12;\n" +
+	"\ftriggered_by\x18\x0f \x01(\v2\x18.carabiner.core.v1.ActorR\vtriggeredBy\x129\n" +
+	"\n" +
+	"created_at\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"started_at\x18\x11 \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12=\n" +
+	"\fcompleted_at\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x128\n" +
+	"\bpipeline\x18\x13 \x01(\v2\x1c.carabiner.core.v1.ReferenceR\bpipelineB\r\n" +
+	"\v_run_numberB\x0e\n" +
+	"\f_run_attempt\"\xca\x03\n" +
+	"\aTaskRun\x12\x1b\n" +
+	"\ttask_name\x18\x01 \x01(\tR\btaskName\x12\x10\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\x124\n" +
+	"\aoutcome\x18\x03 \x01(\x0e2\x1a.carabiner.core.v1.OutcomeR\aoutcome\x12\x16\n" +
+	"\x06errors\x18\x04 \x01(\tR\x06errors\x124\n" +
+	"\x06status\x18\n" +
+	" \x01(\x0e2\x1c.carabiner.core.v1.RunStatusR\x06status\x12\x1f\n" +
+	"\vexternal_id\x18\v \x01(\tR\n" +
+	"externalId\x12?\n" +
+	"\fpipeline_run\x18\f \x01(\v2\x1c.carabiner.core.v1.ReferenceR\vpipelineRun\x129\n" +
+	"\n" +
+	"started_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12=\n" +
+	"\fcompleted_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x120\n" +
+	"\x04task\x18\x0f \x01(\v2\x1c.carabiner.core.v1.ReferenceR\x04task\"\xae\x03\n" +
+	"\aStepRun\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x124\n" +
+	"\aoutcome\x18\x02 \x01(\x0e2\x1a.carabiner.core.v1.OutcomeR\aoutcome\x12\x16\n" +
+	"\x06errors\x18\x03 \x01(\tR\x06errors\x124\n" +
+	"\x06status\x18\n" +
+	" \x01(\x0e2\x1c.carabiner.core.v1.RunStatusR\x06status\x12\x1b\n" +
+	"\x06number\x18\v \x01(\rH\x00R\x06number\x88\x01\x01\x127\n" +
+	"\btask_run\x18\f \x01(\v2\x1c.carabiner.core.v1.ReferenceR\ataskRun\x129\n" +
+	"\n" +
+	"started_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12=\n" +
+	"\fcompleted_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x120\n" +
+	"\x04step\x18\x0f \x01(\v2\x1c.carabiner.core.v1.ReferenceR\x04stepB\t\n" +
+	"\a_number\".\n" +
+	"\x06Branch\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n" +
+	"\x03ref\x18\x02 \x01(\tR\x03ref\"\x83\x02\n" +
+	"\x06Change\x12\x1f\n" +
+	"\vexternal_id\x18\x01 \x01(\tR\n" +
+	"externalId\x12\x1b\n" +
+	"\x06number\x18\x02 \x01(\x04H\x00R\x06number\x88\x01\x01\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05title\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x10\n" +
+	"\x03url\x18\x05 \x01(\tR\x03url\x120\n" +
+	"\x06author\x18\n" +
+	" \x01(\v2\x18.carabiner.core.v1.ActorR\x06author\x124\n" +
+	"\x05state\x18\v \x01(\x0e2\x1e.carabiner.core.v1.ChangeStateR\x05stateB\t\n" +
+	"\a_number\"\xc9\x02\n" +
+	"\bRevision\x12\x10\n" +
+	"\x03sha\x18\x01 \x01(\tR\x03sha\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12\x10\n" +
+	"\x03url\x18\x03 \x01(\tR\x03url\x120\n" +
+	"\x06author\x18\n" +
+	" \x01(\v2\x18.carabiner.core.v1.ActorR\x06author\x126\n" +
+	"\tcommitter\x18\v \x01(\v2\x18.carabiner.core.v1.ActorR\tcommitter\x12\x19\n" +
+	"\btree_sha\x18\f \x01(\tR\atreeSha\x12;\n" +
+	"\vauthored_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"authoredAt\x12=\n" +
+	"\fcommitted_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\vcommittedAt\"\x95\x01\n" +
+	"\x03Tag\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n" +
+	"\x03ref\x18\x02 \x01(\tR\x03ref\x12\x1c\n" +
+	"\tannotated\x18\x03 \x01(\bR\tannotated\x120\n" +
+	"\x06tagger\x18\n" +
+	" \x01(\v2\x18.carabiner.core.v1.ActorR\x06tagger\x12\x18\n" +
+	"\amessage\x18\v \x01(\tR\amessage\"\xbf\x01\n" +
+	"\x0eRelatedSubject\x122\n" +
+	"\x04role\x18\x01 \x01(\x0e2\x1e.carabiner.core.v1.SubjectRoleR\x04role\x122\n" +
+	"\x04type\x18\x02 \x01(\x0e2\x1e.carabiner.core.v1.SubjectTypeR\x04type\x12E\n" +
+	"\n" +
+	"descriptor\x18\x03 \x01(\v2%.carabiner.core.v1.ResourceDescriptorR\n" +
+	"descriptor\"T\n" +
+	"\tReference\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06source\x18\x02 \x01(\tR\x06source\x12\x1f\n" +
 	"\vexternal_id\x18\x03 \x01(\tR\n" +
-	"externalId\x12\x1d\n" +
+	"externalId\"\xa1\x01\n" +
+	"\x05Actor\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x14\n" +
+	"\x05email\x18\x04 \x01(\tR\x05email\x120\n" +
+	"\x04type\x18\x05 \x01(\x0e2\x1c.carabiner.core.v1.ActorTypeR\x04type\x12\x10\n" +
+	"\x03url\x18\x06 \x01(\tR\x03url\"\xe1\x02\n" +
+	"\x12ResourceDescriptor\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n" +
+	"\x03uri\x18\x02 \x01(\tR\x03uri\x12I\n" +
+	"\x06digest\x18\x03 \x03(\v21.carabiner.core.v1.ResourceDescriptor.DigestEntryR\x06digest\x12\x18\n" +
+	"\acontent\x18\x04 \x01(\fR\acontent\x12+\n" +
+	"\x11download_location\x18\x05 \x01(\tR\x10downloadLocation\x12\x1d\n" +
 	"\n" +
-	"run_number\x18\x04 \x01(\x04R\trunNumber\x12\x1f\n" +
-	"\vrun_attempt\x18\x05 \x01(\rR\n" +
-	"runAttempt\x124\n" +
-	"\x06status\x18\x06 \x01(\x0e2\x1c.carabiner.core.v1.RunStatusR\x06status\x12=\n" +
-	"\n" +
-	"conclusion\x18\a \x01(\x0e2\x1d.carabiner.core.v1.ConclusionR\n" +
-	"conclusion\x12\x19\n" +
-	"\bhead_sha\x18\b \x01(\tR\aheadSha\x12\x1f\n" +
-	"\vhead_branch\x18\t \x01(\tR\n" +
-	"headBranch\x12\x14\n" +
-	"\x05event\x18\n" +
-	" \x01(\tR\x05event\x12\x14\n" +
-	"\x05actor\x18\v \x01(\tR\x05actor\x12\x10\n" +
-	"\x03url\x18\f \x01(\tR\x03url\x129\n" +
-	"\n" +
-	"created_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
-	"\n" +
-	"started_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12=\n" +
-	"\fcompleted_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\"\xcf\x03\n" +
-	"\x06JobRun\x12\x18\n" +
-	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12(\n" +
-	"\x03job\x18\x02 \x01(\v2\x16.carabiner.core.v1.JobR\x03job\x12A\n" +
-	"\fpipeline_run\x18\x03 \x01(\v2\x1e.carabiner.core.v1.PipelineRunR\vpipelineRun\x12\x1f\n" +
-	"\vexternal_id\x18\x04 \x01(\tR\n" +
-	"externalId\x12\x1c\n" +
-	"\x04name\x18\x05 \x01(\tB\b\xbaH\x05r\x03\x18\xff\x01R\x04name\x124\n" +
-	"\x06status\x18\x06 \x01(\x0e2\x1c.carabiner.core.v1.RunStatusR\x06status\x12=\n" +
-	"\n" +
-	"conclusion\x18\a \x01(\x0e2\x1d.carabiner.core.v1.ConclusionR\n" +
-	"conclusion\x12\x10\n" +
-	"\x03url\x18\b \x01(\tR\x03url\x129\n" +
-	"\n" +
-	"started_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12=\n" +
-	"\fcompleted_at\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\"\xa9\x03\n" +
-	"\aStepRun\x12\x18\n" +
-	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12+\n" +
-	"\x04step\x18\x02 \x01(\v2\x17.carabiner.core.v1.StepR\x04step\x122\n" +
-	"\ajob_run\x18\x03 \x01(\v2\x19.carabiner.core.v1.JobRunR\x06jobRun\x12\x1c\n" +
-	"\x04name\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xff\x01R\x04name\x12\x16\n" +
-	"\x06number\x18\x05 \x01(\rR\x06number\x124\n" +
-	"\x06status\x18\x06 \x01(\x0e2\x1c.carabiner.core.v1.RunStatusR\x06status\x12=\n" +
-	"\n" +
-	"conclusion\x18\a \x01(\x0e2\x1d.carabiner.core.v1.ConclusionR\n" +
-	"conclusion\x129\n" +
-	"\n" +
-	"started_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12=\n" +
-	"\fcompleted_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt*t\n" +
+	"media_type\x18\x06 \x01(\tR\tmediaType\x129\n" +
+	"\vannotations\x18\a \x01(\v2\x17.google.protobuf.StructR\vannotations\x1a9\n" +
+	"\vDigestEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\x80\x02\n" +
+	"\vSubjectType\x12\x1c\n" +
+	"\x18SUBJECT_TYPE_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19SUBJECT_TYPE_PIPELINE_RUN\x10\x01\x12\x19\n" +
+	"\x15SUBJECT_TYPE_TASK_RUN\x10\x02\x12\x1b\n" +
+	"\x17SUBJECT_TYPE_REPOSITORY\x10\x03\x12\x17\n" +
+	"\x13SUBJECT_TYPE_BRANCH\x10\x04\x12\x17\n" +
+	"\x13SUBJECT_TYPE_CHANGE\x10\x05\x12\x19\n" +
+	"\x15SUBJECT_TYPE_STEP_RUN\x10\x06\x12\x19\n" +
+	"\x15SUBJECT_TYPE_REVISION\x10\a\x12\x14\n" +
+	"\x10SUBJECT_TYPE_TAG\x10\b*\x8f\x02\n" +
+	"\tPredicate\x12\x19\n" +
+	"\x15PREDICATE_UNSPECIFIED\x10\x00\x12\x14\n" +
+	"\x10PREDICATE_QUEUED\x10\x01\x12\x15\n" +
+	"\x11PREDICATE_STARTED\x10\x02\x12\x16\n" +
+	"\x12PREDICATE_FINISHED\x10\x03\x12\x15\n" +
+	"\x11PREDICATE_CREATED\x10\x04\x12\x16\n" +
+	"\x12PREDICATE_MODIFIED\x10\x05\x12\x15\n" +
+	"\x11PREDICATE_DELETED\x10\x06\x12\x16\n" +
+	"\x12PREDICATE_REVIEWED\x10\a\x12\x14\n" +
+	"\x10PREDICATE_MERGED\x10\b\x12\x17\n" +
+	"\x13PREDICATE_ABANDONED\x10\t\x12\x15\n" +
+	"\x11PREDICATE_UPDATED\x10\n" +
+	"*o\n" +
 	"\tRunStatus\x12\x1a\n" +
 	"\x16RUN_STATUS_UNSPECIFIED\x10\x00\x12\x15\n" +
-	"\x11RUN_STATUS_QUEUED\x10\x01\x12\x1a\n" +
-	"\x16RUN_STATUS_IN_PROGRESS\x10\x02\x12\x18\n" +
-	"\x14RUN_STATUS_COMPLETED\x10\x03*\x96\x02\n" +
+	"\x11RUN_STATUS_QUEUED\x10\x01\x12\x16\n" +
+	"\x12RUN_STATUS_STARTED\x10\x02\x12\x17\n" +
+	"\x13RUN_STATUS_FINISHED\x10\x03*_\n" +
+	"\aOutcome\x12\x17\n" +
+	"\x13OUTCOME_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fOUTCOME_SUCCESS\x10\x01\x12\x13\n" +
+	"\x0fOUTCOME_FAILURE\x10\x02\x12\x11\n" +
+	"\rOUTCOME_ERROR\x10\x03*\xf2\x01\n" +
 	"\n" +
-	"Conclusion\x12\x1e\n" +
-	"\x1aRUN_CONCLUSION_UNSPECIFIED\x10\x00\x12\x1a\n" +
-	"\x16RUN_CONCLUSION_SUCCESS\x10\x01\x12\x1a\n" +
-	"\x16RUN_CONCLUSION_FAILURE\x10\x02\x12\x1c\n" +
-	"\x18RUN_CONCLUSION_CANCELLED\x10\x03\x12\x1a\n" +
-	"\x16RUN_CONCLUSION_SKIPPED\x10\x04\x12\x1c\n" +
-	"\x18RUN_CONCLUSION_TIMED_OUT\x10\x05\x12\"\n" +
-	"\x1eRUN_CONCLUSION_ACTION_REQUIRED\x10\x06\x12\x1a\n" +
-	"\x16RUN_CONCLUSION_NEUTRAL\x10\a\x12\x18\n" +
-	"\x14RUN_CONCLUSION_STALE\x10\bB\xc4\x01\n" +
+	"Conclusion\x12\x1a\n" +
+	"\x16CONCLUSION_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12CONCLUSION_SUCCESS\x10\x01\x12\x16\n" +
+	"\x12CONCLUSION_FAILURE\x10\x02\x12\x18\n" +
+	"\x14CONCLUSION_CANCELLED\x10\x03\x12\x16\n" +
+	"\x12CONCLUSION_SKIPPED\x10\x04\x12\x18\n" +
+	"\x14CONCLUSION_TIMED_OUT\x10\x05\x12\x1e\n" +
+	"\x1aCONCLUSION_ACTION_REQUIRED\x10\x06\x12\x16\n" +
+	"\x12CONCLUSION_NEUTRAL\x10\a\x12\x14\n" +
+	"\x10CONCLUSION_STALE\x10\b*\x84\x01\n" +
+	"\tActorType\x12\x1a\n" +
+	"\x16ACTOR_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fACTOR_TYPE_USER\x10\x01\x12\x12\n" +
+	"\x0eACTOR_TYPE_BOT\x10\x02\x12\x12\n" +
+	"\x0eACTOR_TYPE_APP\x10\x03\x12\x1e\n" +
+	"\x1aACTOR_TYPE_SERVICE_ACCOUNT\x10\x04*\x9f\x02\n" +
+	"\vSubjectRole\x12\x1c\n" +
+	"\x18SUBJECT_ROLE_UNSPECIFIED\x10\x00\x12\x1e\n" +
+	"\x1aSUBJECT_ROLE_IN_REPOSITORY\x10\x01\x12\x1a\n" +
+	"\x16SUBJECT_ROLE_ON_BRANCH\x10\x02\x12\x1e\n" +
+	"\x1aSUBJECT_ROLE_SOURCE_BRANCH\x10\x03\x12\x1e\n" +
+	"\x1aSUBJECT_ROLE_TARGET_BRANCH\x10\x04\x12\x15\n" +
+	"\x11SUBJECT_ROLE_HEAD\x10\x05\x12\x15\n" +
+	"\x11SUBJECT_ROLE_BASE\x10\x06\x12\x17\n" +
+	"\x13SUBJECT_ROLE_PARENT\x10\a\x12\x16\n" +
+	"\x12SUBJECT_ROLE_MERGE\x10\b\x12\x17\n" +
+	"\x13SUBJECT_ROLE_TAGGED\x10\t*\x8c\x01\n" +
+	"\vChangeState\x12\x1c\n" +
+	"\x18CHANGE_STATE_UNSPECIFIED\x10\x00\x12\x15\n" +
+	"\x11CHANGE_STATE_OPEN\x10\x01\x12\x16\n" +
+	"\x12CHANGE_STATE_DRAFT\x10\x02\x12\x17\n" +
+	"\x13CHANGE_STATE_MERGED\x10\x03\x12\x17\n" +
+	"\x13CHANGE_STATE_CLOSED\x10\x04B\xc4\x01\n" +
 	"\x15com.carabiner.core.v1B\vEventsProtoP\x01Z8github.com/carabiner-dev/core/api/carabiner/core/v1;core\xa2\x02\x03CCX\xaa\x02\x11Carabiner.Core.V1\xca\x02\x11Carabiner\\Core\\V1\xe2\x02\x1dCarabiner\\Core\\V1\\GPBMetadata\xea\x02\x13Carabiner::Core::V1b\x06proto3"
 
 var (
@@ -677,43 +2328,92 @@ func file_carabiner_core_v1_events_proto_rawDescGZIP() []byte {
 	return file_carabiner_core_v1_events_proto_rawDescData
 }
 
-var file_carabiner_core_v1_events_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_carabiner_core_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_carabiner_core_v1_events_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
+var file_carabiner_core_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_carabiner_core_v1_events_proto_goTypes = []any{
-	(RunStatus)(0),                // 0: carabiner.core.v1.RunStatus
-	(Conclusion)(0),               // 1: carabiner.core.v1.Conclusion
-	(*PipelineRun)(nil),           // 2: carabiner.core.v1.PipelineRun
-	(*JobRun)(nil),                // 3: carabiner.core.v1.JobRun
-	(*StepRun)(nil),               // 4: carabiner.core.v1.StepRun
-	(*Pipeline)(nil),              // 5: carabiner.core.v1.Pipeline
-	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
-	(*Job)(nil),                   // 7: carabiner.core.v1.Job
-	(*Step)(nil),                  // 8: carabiner.core.v1.Step
+	(SubjectType)(0),              // 0: carabiner.core.v1.SubjectType
+	(Predicate)(0),                // 1: carabiner.core.v1.Predicate
+	(RunStatus)(0),                // 2: carabiner.core.v1.RunStatus
+	(Outcome)(0),                  // 3: carabiner.core.v1.Outcome
+	(Conclusion)(0),               // 4: carabiner.core.v1.Conclusion
+	(ActorType)(0),                // 5: carabiner.core.v1.ActorType
+	(SubjectRole)(0),              // 6: carabiner.core.v1.SubjectRole
+	(ChangeState)(0),              // 7: carabiner.core.v1.ChangeState
+	(*Event)(nil),                 // 8: carabiner.core.v1.Event
+	(*EventType)(nil),             // 9: carabiner.core.v1.EventType
+	(*Subject)(nil),               // 10: carabiner.core.v1.Subject
+	(*PipelineRun)(nil),           // 11: carabiner.core.v1.PipelineRun
+	(*TaskRun)(nil),               // 12: carabiner.core.v1.TaskRun
+	(*StepRun)(nil),               // 13: carabiner.core.v1.StepRun
+	(*Branch)(nil),                // 14: carabiner.core.v1.Branch
+	(*Change)(nil),                // 15: carabiner.core.v1.Change
+	(*Revision)(nil),              // 16: carabiner.core.v1.Revision
+	(*Tag)(nil),                   // 17: carabiner.core.v1.Tag
+	(*RelatedSubject)(nil),        // 18: carabiner.core.v1.RelatedSubject
+	(*Reference)(nil),             // 19: carabiner.core.v1.Reference
+	(*Actor)(nil),                 // 20: carabiner.core.v1.Actor
+	(*ResourceDescriptor)(nil),    // 21: carabiner.core.v1.ResourceDescriptor
+	nil,                           // 22: carabiner.core.v1.Event.SystemDataEntry
+	nil,                           // 23: carabiner.core.v1.ResourceDescriptor.DigestEntry
+	(*timestamppb.Timestamp)(nil), // 24: google.protobuf.Timestamp
+	(*Repository)(nil),            // 25: carabiner.core.v1.Repository
+	(*structpb.Struct)(nil),       // 26: google.protobuf.Struct
 }
 var file_carabiner_core_v1_events_proto_depIdxs = []int32{
-	5,  // 0: carabiner.core.v1.PipelineRun.pipeline:type_name -> carabiner.core.v1.Pipeline
-	0,  // 1: carabiner.core.v1.PipelineRun.status:type_name -> carabiner.core.v1.RunStatus
-	1,  // 2: carabiner.core.v1.PipelineRun.conclusion:type_name -> carabiner.core.v1.Conclusion
-	6,  // 3: carabiner.core.v1.PipelineRun.created_at:type_name -> google.protobuf.Timestamp
-	6,  // 4: carabiner.core.v1.PipelineRun.started_at:type_name -> google.protobuf.Timestamp
-	6,  // 5: carabiner.core.v1.PipelineRun.completed_at:type_name -> google.protobuf.Timestamp
-	7,  // 6: carabiner.core.v1.JobRun.job:type_name -> carabiner.core.v1.Job
-	2,  // 7: carabiner.core.v1.JobRun.pipeline_run:type_name -> carabiner.core.v1.PipelineRun
-	0,  // 8: carabiner.core.v1.JobRun.status:type_name -> carabiner.core.v1.RunStatus
-	1,  // 9: carabiner.core.v1.JobRun.conclusion:type_name -> carabiner.core.v1.Conclusion
-	6,  // 10: carabiner.core.v1.JobRun.started_at:type_name -> google.protobuf.Timestamp
-	6,  // 11: carabiner.core.v1.JobRun.completed_at:type_name -> google.protobuf.Timestamp
-	8,  // 12: carabiner.core.v1.StepRun.step:type_name -> carabiner.core.v1.Step
-	3,  // 13: carabiner.core.v1.StepRun.job_run:type_name -> carabiner.core.v1.JobRun
-	0,  // 14: carabiner.core.v1.StepRun.status:type_name -> carabiner.core.v1.RunStatus
-	1,  // 15: carabiner.core.v1.StepRun.conclusion:type_name -> carabiner.core.v1.Conclusion
-	6,  // 16: carabiner.core.v1.StepRun.started_at:type_name -> google.protobuf.Timestamp
-	6,  // 17: carabiner.core.v1.StepRun.completed_at:type_name -> google.protobuf.Timestamp
-	18, // [18:18] is the sub-list for method output_type
-	18, // [18:18] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	9,  // 0: carabiner.core.v1.Event.type:type_name -> carabiner.core.v1.EventType
+	24, // 1: carabiner.core.v1.Event.timestamp:type_name -> google.protobuf.Timestamp
+	10, // 2: carabiner.core.v1.Event.subject:type_name -> carabiner.core.v1.Subject
+	18, // 3: carabiner.core.v1.Event.related:type_name -> carabiner.core.v1.RelatedSubject
+	22, // 4: carabiner.core.v1.Event.system_data:type_name -> carabiner.core.v1.Event.SystemDataEntry
+	0,  // 5: carabiner.core.v1.EventType.subject:type_name -> carabiner.core.v1.SubjectType
+	1,  // 6: carabiner.core.v1.EventType.predicate:type_name -> carabiner.core.v1.Predicate
+	11, // 7: carabiner.core.v1.Subject.pipeline_run:type_name -> carabiner.core.v1.PipelineRun
+	12, // 8: carabiner.core.v1.Subject.task_run:type_name -> carabiner.core.v1.TaskRun
+	13, // 9: carabiner.core.v1.Subject.step_run:type_name -> carabiner.core.v1.StepRun
+	25, // 10: carabiner.core.v1.Subject.repository:type_name -> carabiner.core.v1.Repository
+	14, // 11: carabiner.core.v1.Subject.branch:type_name -> carabiner.core.v1.Branch
+	15, // 12: carabiner.core.v1.Subject.change:type_name -> carabiner.core.v1.Change
+	16, // 13: carabiner.core.v1.Subject.revision:type_name -> carabiner.core.v1.Revision
+	17, // 14: carabiner.core.v1.Subject.tag:type_name -> carabiner.core.v1.Tag
+	3,  // 15: carabiner.core.v1.PipelineRun.outcome:type_name -> carabiner.core.v1.Outcome
+	2,  // 16: carabiner.core.v1.PipelineRun.status:type_name -> carabiner.core.v1.RunStatus
+	4,  // 17: carabiner.core.v1.PipelineRun.conclusion:type_name -> carabiner.core.v1.Conclusion
+	20, // 18: carabiner.core.v1.PipelineRun.triggered_by:type_name -> carabiner.core.v1.Actor
+	24, // 19: carabiner.core.v1.PipelineRun.created_at:type_name -> google.protobuf.Timestamp
+	24, // 20: carabiner.core.v1.PipelineRun.started_at:type_name -> google.protobuf.Timestamp
+	24, // 21: carabiner.core.v1.PipelineRun.completed_at:type_name -> google.protobuf.Timestamp
+	19, // 22: carabiner.core.v1.PipelineRun.pipeline:type_name -> carabiner.core.v1.Reference
+	3,  // 23: carabiner.core.v1.TaskRun.outcome:type_name -> carabiner.core.v1.Outcome
+	2,  // 24: carabiner.core.v1.TaskRun.status:type_name -> carabiner.core.v1.RunStatus
+	19, // 25: carabiner.core.v1.TaskRun.pipeline_run:type_name -> carabiner.core.v1.Reference
+	24, // 26: carabiner.core.v1.TaskRun.started_at:type_name -> google.protobuf.Timestamp
+	24, // 27: carabiner.core.v1.TaskRun.completed_at:type_name -> google.protobuf.Timestamp
+	19, // 28: carabiner.core.v1.TaskRun.task:type_name -> carabiner.core.v1.Reference
+	3,  // 29: carabiner.core.v1.StepRun.outcome:type_name -> carabiner.core.v1.Outcome
+	2,  // 30: carabiner.core.v1.StepRun.status:type_name -> carabiner.core.v1.RunStatus
+	19, // 31: carabiner.core.v1.StepRun.task_run:type_name -> carabiner.core.v1.Reference
+	24, // 32: carabiner.core.v1.StepRun.started_at:type_name -> google.protobuf.Timestamp
+	24, // 33: carabiner.core.v1.StepRun.completed_at:type_name -> google.protobuf.Timestamp
+	19, // 34: carabiner.core.v1.StepRun.step:type_name -> carabiner.core.v1.Reference
+	20, // 35: carabiner.core.v1.Change.author:type_name -> carabiner.core.v1.Actor
+	7,  // 36: carabiner.core.v1.Change.state:type_name -> carabiner.core.v1.ChangeState
+	20, // 37: carabiner.core.v1.Revision.author:type_name -> carabiner.core.v1.Actor
+	20, // 38: carabiner.core.v1.Revision.committer:type_name -> carabiner.core.v1.Actor
+	24, // 39: carabiner.core.v1.Revision.authored_at:type_name -> google.protobuf.Timestamp
+	24, // 40: carabiner.core.v1.Revision.committed_at:type_name -> google.protobuf.Timestamp
+	20, // 41: carabiner.core.v1.Tag.tagger:type_name -> carabiner.core.v1.Actor
+	6,  // 42: carabiner.core.v1.RelatedSubject.role:type_name -> carabiner.core.v1.SubjectRole
+	0,  // 43: carabiner.core.v1.RelatedSubject.type:type_name -> carabiner.core.v1.SubjectType
+	21, // 44: carabiner.core.v1.RelatedSubject.descriptor:type_name -> carabiner.core.v1.ResourceDescriptor
+	5,  // 45: carabiner.core.v1.Actor.type:type_name -> carabiner.core.v1.ActorType
+	23, // 46: carabiner.core.v1.ResourceDescriptor.digest:type_name -> carabiner.core.v1.ResourceDescriptor.DigestEntry
+	26, // 47: carabiner.core.v1.ResourceDescriptor.annotations:type_name -> google.protobuf.Struct
+	26, // 48: carabiner.core.v1.Event.SystemDataEntry.value:type_name -> google.protobuf.Struct
+	49, // [49:49] is the sub-list for method output_type
+	49, // [49:49] is the sub-list for method input_type
+	49, // [49:49] is the sub-list for extension type_name
+	49, // [49:49] is the sub-list for extension extendee
+	0,  // [0:49] is the sub-list for field type_name
 }
 
 func init() { file_carabiner_core_v1_events_proto_init() }
@@ -722,13 +2422,26 @@ func file_carabiner_core_v1_events_proto_init() {
 		return
 	}
 	file_carabiner_core_v1_objects_proto_init()
+	file_carabiner_core_v1_events_proto_msgTypes[2].OneofWrappers = []any{
+		(*Subject_PipelineRun)(nil),
+		(*Subject_TaskRun)(nil),
+		(*Subject_StepRun)(nil),
+		(*Subject_Repository)(nil),
+		(*Subject_Branch)(nil),
+		(*Subject_Change)(nil),
+		(*Subject_Revision)(nil),
+		(*Subject_Tag)(nil),
+	}
+	file_carabiner_core_v1_events_proto_msgTypes[3].OneofWrappers = []any{}
+	file_carabiner_core_v1_events_proto_msgTypes[5].OneofWrappers = []any{}
+	file_carabiner_core_v1_events_proto_msgTypes[7].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_carabiner_core_v1_events_proto_rawDesc), len(file_carabiner_core_v1_events_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   3,
+			NumEnums:      8,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
