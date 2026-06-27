@@ -4,8 +4,6 @@
 package core
 
 import (
-	"strings"
-
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -47,21 +45,8 @@ func IsPrimaryRevision(d *ResourceDescriptor) bool {
 // event, so the provenance survives when d is lifted out of the event to become
 // an attestation subject. It is a no-op when d is nil.
 func AnnotateSubjectOrigin(d *ResourceDescriptor, role SubjectRole, subjectType SubjectType) {
-	setAnnotation(d, AnnotationSubjectRole, structpb.NewStringValue(enumToCamel(role.String(), "SUBJECT_ROLE_")))
-	setAnnotation(d, AnnotationSubjectType, structpb.NewStringValue(enumToCamel(subjectType.String(), "SUBJECT_TYPE_")))
-}
-
-// enumToCamel renders a proto enum value name (e.g. "SUBJECT_ROLE_ON_BRANCH") as
-// camelCase ("onBranch") after stripping prefix, so annotation values share the
-// camelCase of the annotation keys (and match the cdevents subject naming).
-func enumToCamel(name, prefix string) string {
-	parts := strings.Split(strings.ToLower(strings.TrimPrefix(name, prefix)), "_")
-	for i := 1; i < len(parts); i++ {
-		if parts[i] != "" {
-			parts[i] = strings.ToUpper(parts[i][:1]) + parts[i][1:]
-		}
-	}
-	return strings.Join(parts, "")
+	setAnnotation(d, AnnotationSubjectRole, structpb.NewStringValue(SubjectRoleName(role)))
+	setAnnotation(d, AnnotationSubjectType, structpb.NewStringValue(SubjectTypeName(subjectType)))
 }
 
 // setAnnotation sets a single annotation field on d, allocating the annotations
