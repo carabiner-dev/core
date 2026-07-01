@@ -1020,7 +1020,10 @@ type PipelineRun struct {
 	CompletedAt *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
 	// pipeline references the declared catalog Pipeline this run is an execution
 	// of (a pointer, not the object).
-	Pipeline      *Reference `protobuf:"bytes,19,opt,name=pipeline,proto3" json:"pipeline,omitempty"`
+	Pipeline *Reference `protobuf:"bytes,19,opt,name=pipeline,proto3" json:"pipeline,omitempty"`
+	// event is the source-system event that triggered the run, e.g. "push",
+	// "release", or "workflow_dispatch".
+	Event         string `protobuf:"bytes,20,opt,name=event,proto3" json:"event,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1151,6 +1154,13 @@ func (x *PipelineRun) GetPipeline() *Reference {
 		return x.Pipeline
 	}
 	return nil
+}
+
+func (x *PipelineRun) GetEvent() string {
+	if x != nil {
+		return x.Event
+	}
+	return ""
 }
 
 // TaskRun is a single execution of a task within a pipeline run. It references
@@ -2132,7 +2142,7 @@ const file_carabiner_core_v1_events_proto_rawDesc = "" +
 	"\x06change\x18\x0f \x01(\v2\x19.carabiner.core.v1.ChangeH\x00R\x06change\x129\n" +
 	"\brevision\x18\x10 \x01(\v2\x1b.carabiner.core.v1.RevisionH\x00R\brevision\x12*\n" +
 	"\x03tag\x18\x11 \x01(\v2\x16.carabiner.core.v1.TagH\x00R\x03tagB\x06\n" +
-	"\x04data\"\xbd\x05\n" +
+	"\x04data\"\xd3\x05\n" +
 	"\vPipelineRun\x12#\n" +
 	"\rpipeline_name\x18\x01 \x01(\tR\fpipelineName\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url\x124\n" +
@@ -2155,7 +2165,8 @@ const file_carabiner_core_v1_events_proto_rawDesc = "" +
 	"\n" +
 	"started_at\x18\x11 \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12=\n" +
 	"\fcompleted_at\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x128\n" +
-	"\bpipeline\x18\x13 \x01(\v2\x1c.carabiner.core.v1.ReferenceR\bpipelineB\r\n" +
+	"\bpipeline\x18\x13 \x01(\v2\x1c.carabiner.core.v1.ReferenceR\bpipeline\x12\x14\n" +
+	"\x05event\x18\x14 \x01(\tR\x05eventB\r\n" +
 	"\v_run_numberB\x0e\n" +
 	"\f_run_attempt\"\xca\x03\n" +
 	"\aTaskRun\x12\x1b\n" +

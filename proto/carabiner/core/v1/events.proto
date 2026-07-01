@@ -160,6 +160,10 @@ message PipelineRun {
 	// pipeline references the declared catalog Pipeline this run is an execution
 	// of (a pointer, not the object).
 	Reference pipeline = 19;
+
+	// event is the source-system event that triggered the run, e.g. "push",
+	// "release", or "workflow_dispatch".
+	string event = 20;
 }
 
 // TaskRun is a single execution of a task within a pipeline run. It references
