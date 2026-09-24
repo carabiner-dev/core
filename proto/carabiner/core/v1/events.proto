@@ -341,6 +341,23 @@ message RelatedSubject {
 	ResourceDescriptor descriptor = 3;
 }
 
+// ObjectRef is the platform-wide identifier of an object an event, an
+// attestation or any other record is about: a subject kind plus the object's
+// identifier in the terms of that kind (a commit sha for a revision, a tag name
+// for a tag, a run id for a pipeline run, a repository URI for a repository).
+// Its canonical string form is "<subjectType>:<id>" with the subject type in the
+// camelCase naming of SubjectTypeName, e.g. "revision:2222…", "tag:v0.2",
+// "pipelineRun:1234". Services index and query by it so "everything about
+// commit X" means the same thing everywhere.
+message ObjectRef {
+	// type is the kind of object referenced.
+	SubjectType type = 1;
+
+	// id is the object's identifier in the terms of its kind. Revision ids are
+	// lowercased so a commit has a single spelling.
+	string id = 2;
+}
+
 // Reference is a pointer to another object by identity, used where a subject
 // relates to a parent or declared object without embedding it. It carries both
 // the carabiner id and the source-system id because a producer often references
