@@ -62,6 +62,19 @@ message Namespace {
 	// Lifecycle status. Set to STATUS_SUSPENDED when the backing GitHub App
 	// installation is suspended. Unspecified is treated as active.
 	Status status = 4;
+
+	// labels are the namespace's own labels: key/value pairs (the value may be
+	// empty) that rules select resources by. See labels.proto for the syntax.
+	// The namespace's repositories inherit them, and a key set here is locked
+	// on those repositories.
+	map<string, string> labels = 5 [
+		(buf.validate.field).map = {max_pairs: 64}
+	];
+
+	// effective_labels are the labels selectors match. For a namespace they
+	// equal its own labels. Output only: computed by the service that owns the
+	// resource and ignored on writes.
+	map<string, string> effective_labels = 6;
 }
 
 // Repository abstracts a source-code repository tracked under a namespace. The
@@ -101,6 +114,24 @@ message Repository  {
 
 	// description is the repository's short description.
 	string description = 9;
+
+	// labels are the repository's own labels: key/value pairs (the value may
+	// be empty) that rules select resources by. See labels.proto for the
+	// syntax. A key the repository's namespace sets cannot be set here.
+	map<string, string> labels = 10 [
+		(buf.validate.field).map = {max_pairs: 64}
+	];
+
+	// effective_labels are the labels selectors match: the repository's own
+	// labels with its namespace's laid over them, the namespace winning on a
+	// key both set. Output only: computed by the service that owns the
+	// resource and ignored on writes.
+	map<string, string> effective_labels = 11;
+
+	// inherited_label_keys are the keys of effective_labels that come from the
+	// repository's namespace, sorted. They are locked on the repository: an
+	// own label under one of these keys is shadowed. Output only.
+	repeated string inherited_label_keys = 12;
 }
 
 // Pipeline abstracts an automated workflow declared in a repository (e.g. a

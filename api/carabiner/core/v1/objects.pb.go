@@ -217,9 +217,18 @@ type Namespace struct {
 	Name   string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	// Lifecycle status. Set to STATUS_SUSPENDED when the backing GitHub App
 	// installation is suspended. Unspecified is treated as active.
-	Status        Status `protobuf:"varint,4,opt,name=status,proto3,enum=carabiner.core.v1.Status" json:"status,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Status Status `protobuf:"varint,4,opt,name=status,proto3,enum=carabiner.core.v1.Status" json:"status,omitempty"`
+	// labels are the namespace's own labels: key/value pairs (the value may be
+	// empty) that rules select resources by. See labels.proto for the syntax.
+	// The namespace's repositories inherit them, and a key set here is locked
+	// on those repositories.
+	Labels map[string]string `protobuf:"bytes,5,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// effective_labels are the labels selectors match. For a namespace they
+	// equal its own labels. Output only: computed by the service that owns the
+	// resource and ignored on writes.
+	EffectiveLabels map[string]string `protobuf:"bytes,6,rep,name=effective_labels,json=effectiveLabels,proto3" json:"effective_labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Namespace) Reset() {
@@ -280,6 +289,20 @@ func (x *Namespace) GetStatus() Status {
 	return Status_STATUS_UNSPECIFIED
 }
 
+func (x *Namespace) GetLabels() map[string]string {
+	if x != nil {
+		return x.Labels
+	}
+	return nil
+}
+
+func (x *Namespace) GetEffectiveLabels() map[string]string {
+	if x != nil {
+		return x.EffectiveLabels
+	}
+	return nil
+}
+
 // Repository abstracts a source-code repository tracked under a namespace. The
 // descriptive fields below are populated from the source system when the
 // repository is connected (registered). They are system-agnostic so any system
@@ -304,9 +327,22 @@ type Repository struct {
 	// default_branch is the repository's default branch, e.g. "main".
 	DefaultBranch string `protobuf:"bytes,8,opt,name=default_branch,json=defaultBranch,proto3" json:"default_branch,omitempty"`
 	// description is the repository's short description.
-	Description   string `protobuf:"bytes,9,opt,name=description,proto3" json:"description,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Description string `protobuf:"bytes,9,opt,name=description,proto3" json:"description,omitempty"`
+	// labels are the repository's own labels: key/value pairs (the value may
+	// be empty) that rules select resources by. See labels.proto for the
+	// syntax. A key the repository's namespace sets cannot be set here.
+	Labels map[string]string `protobuf:"bytes,10,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// effective_labels are the labels selectors match: the repository's own
+	// labels with its namespace's laid over them, the namespace winning on a
+	// key both set. Output only: computed by the service that owns the
+	// resource and ignored on writes.
+	EffectiveLabels map[string]string `protobuf:"bytes,11,rep,name=effective_labels,json=effectiveLabels,proto3" json:"effective_labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// inherited_label_keys are the keys of effective_labels that come from the
+	// repository's namespace, sorted. They are locked on the repository: an
+	// own label under one of these keys is shadowed. Output only.
+	InheritedLabelKeys []string `protobuf:"bytes,12,rep,name=inherited_label_keys,json=inheritedLabelKeys,proto3" json:"inherited_label_keys,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *Repository) Reset() {
@@ -400,6 +436,27 @@ func (x *Repository) GetDescription() string {
 		return x.Description
 	}
 	return ""
+}
+
+func (x *Repository) GetLabels() map[string]string {
+	if x != nil {
+		return x.Labels
+	}
+	return nil
+}
+
+func (x *Repository) GetEffectiveLabels() map[string]string {
+	if x != nil {
+		return x.EffectiveLabels
+	}
+	return nil
+}
+
+func (x *Repository) GetInheritedLabelKeys() []string {
+	if x != nil {
+		return x.InheritedLabelKeys
+	}
+	return nil
 }
 
 // Pipeline abstracts an automated workflow declared in a repository (e.g. a
@@ -692,12 +749,20 @@ const file_carabiner_core_v1_objects_proto_rawDesc = "" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12\"\n" +
 	"\forganization\x18\x02 \x01(\tR\forganization\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12)\n" +
-	"\x04type\x18\x04 \x01(\tB\x15\xbaH\x12r\x10R\x06githubR\x06gitlabR\x04type\"\xbb\x01\n" +
+	"\x04type\x18\x04 \x01(\tB\x15\xbaH\x12r\x10R\x06githubR\x06gitlabR\x04type\"\xe4\x03\n" +
 	"\tNamespace\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x121\n" +
 	"\x06system\x18\x02 \x01(\v2\x19.carabiner.core.v1.SystemR\x06system\x12.\n" +
 	"\x04name\x18\x03 \x01(\tB\x1a\xbaH\x17r\x15\x18\xc8\x012\x10^[-_a-zA-Z0-9]+$R\x04name\x121\n" +
-	"\x06status\x18\x04 \x01(\x0e2\x19.carabiner.core.v1.StatusR\x06status\"\xc2\x02\n" +
+	"\x06status\x18\x04 \x01(\x0e2\x19.carabiner.core.v1.StatusR\x06status\x12J\n" +
+	"\x06labels\x18\x05 \x03(\v2(.carabiner.core.v1.Namespace.LabelsEntryB\b\xbaH\x05\x9a\x01\x02\x10@R\x06labels\x12\\\n" +
+	"\x10effective_labels\x18\x06 \x03(\v21.carabiner.core.v1.Namespace.EffectiveLabelsEntryR\x0feffectiveLabels\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aB\n" +
+	"\x14EffectiveLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9f\x05\n" +
 	"\n" +
 	"Repository\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12.\n" +
@@ -711,7 +776,17 @@ const file_carabiner_core_v1_objects_proto_rawDesc = "" +
 	"visibility\x18\a \x01(\tR\n" +
 	"visibility\x12%\n" +
 	"\x0edefault_branch\x18\b \x01(\tR\rdefaultBranch\x12 \n" +
-	"\vdescription\x18\t \x01(\tR\vdescription\"\x8c\x02\n" +
+	"\vdescription\x18\t \x01(\tR\vdescription\x12K\n" +
+	"\x06labels\x18\n" +
+	" \x03(\v2).carabiner.core.v1.Repository.LabelsEntryB\b\xbaH\x05\x9a\x01\x02\x10@R\x06labels\x12]\n" +
+	"\x10effective_labels\x18\v \x03(\v22.carabiner.core.v1.Repository.EffectiveLabelsEntryR\x0feffectiveLabels\x120\n" +
+	"\x14inherited_label_keys\x18\f \x03(\tR\x12inheritedLabelKeys\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aB\n" +
+	"\x14EffectiveLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8c\x02\n" +
 	"\bPipeline\x12\x18\n" +
 	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12\x1c\n" +
 	"\x04name\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xff\x01R\x04name\x12=\n" +
@@ -761,7 +836,7 @@ func file_carabiner_core_v1_objects_proto_rawDescGZIP() []byte {
 }
 
 var file_carabiner_core_v1_objects_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_carabiner_core_v1_objects_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_carabiner_core_v1_objects_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_carabiner_core_v1_objects_proto_goTypes = []any{
 	(Status)(0),        // 0: carabiner.core.v1.Status
 	(PipelineState)(0), // 1: carabiner.core.v1.PipelineState
@@ -771,20 +846,28 @@ var file_carabiner_core_v1_objects_proto_goTypes = []any{
 	(*Pipeline)(nil),   // 5: carabiner.core.v1.Pipeline
 	(*Task)(nil),       // 6: carabiner.core.v1.Task
 	(*Step)(nil),       // 7: carabiner.core.v1.Step
+	nil,                // 8: carabiner.core.v1.Namespace.LabelsEntry
+	nil,                // 9: carabiner.core.v1.Namespace.EffectiveLabelsEntry
+	nil,                // 10: carabiner.core.v1.Repository.LabelsEntry
+	nil,                // 11: carabiner.core.v1.Repository.EffectiveLabelsEntry
 }
 var file_carabiner_core_v1_objects_proto_depIdxs = []int32{
-	2, // 0: carabiner.core.v1.Namespace.system:type_name -> carabiner.core.v1.System
-	0, // 1: carabiner.core.v1.Namespace.status:type_name -> carabiner.core.v1.Status
-	3, // 2: carabiner.core.v1.Repository.namespace:type_name -> carabiner.core.v1.Namespace
-	4, // 3: carabiner.core.v1.Pipeline.repository:type_name -> carabiner.core.v1.Repository
-	1, // 4: carabiner.core.v1.Pipeline.state:type_name -> carabiner.core.v1.PipelineState
-	5, // 5: carabiner.core.v1.Task.pipeline:type_name -> carabiner.core.v1.Pipeline
-	6, // 6: carabiner.core.v1.Step.task:type_name -> carabiner.core.v1.Task
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	2,  // 0: carabiner.core.v1.Namespace.system:type_name -> carabiner.core.v1.System
+	0,  // 1: carabiner.core.v1.Namespace.status:type_name -> carabiner.core.v1.Status
+	8,  // 2: carabiner.core.v1.Namespace.labels:type_name -> carabiner.core.v1.Namespace.LabelsEntry
+	9,  // 3: carabiner.core.v1.Namespace.effective_labels:type_name -> carabiner.core.v1.Namespace.EffectiveLabelsEntry
+	3,  // 4: carabiner.core.v1.Repository.namespace:type_name -> carabiner.core.v1.Namespace
+	10, // 5: carabiner.core.v1.Repository.labels:type_name -> carabiner.core.v1.Repository.LabelsEntry
+	11, // 6: carabiner.core.v1.Repository.effective_labels:type_name -> carabiner.core.v1.Repository.EffectiveLabelsEntry
+	4,  // 7: carabiner.core.v1.Pipeline.repository:type_name -> carabiner.core.v1.Repository
+	1,  // 8: carabiner.core.v1.Pipeline.state:type_name -> carabiner.core.v1.PipelineState
+	5,  // 9: carabiner.core.v1.Task.pipeline:type_name -> carabiner.core.v1.Pipeline
+	6,  // 10: carabiner.core.v1.Step.task:type_name -> carabiner.core.v1.Task
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_carabiner_core_v1_objects_proto_init() }
@@ -798,7 +881,7 @@ func file_carabiner_core_v1_objects_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_carabiner_core_v1_objects_proto_rawDesc), len(file_carabiner_core_v1_objects_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   6,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

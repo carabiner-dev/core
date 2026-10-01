@@ -1,0 +1,61 @@
+// SPDX-FileCopyrightText: Copyright 2026 Carabiner Systems, Inc
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+package carabiner.core.v1;
+
+option go_package = "github.com/carabiner-dev/core/api/carabiner/core/v1;core";
+
+// Labels are key/value pairs on platform resources (see the labels fields in
+// objects.proto) that rules select resources by. They are the platform's own
+// and unrelated to labels in a source system.
+//
+// A key is an optional prefix and a name, "prefix/name". The name is 1 to 63
+// characters of [A-Za-z0-9_.-], starting and ending with an alphanumeric. The
+// prefix is a lowercase DNS subdomain of at most 253 characters. A value is
+// empty (the label is then a tag) or follows the rules of a name. Keys are
+// case-sensitive. The "carabiner.dev/" prefix and its subdomains are reserved
+// for labels the platform sets itself.
+//
+// The Go package validates this syntax (ValidateLabels) and evaluates
+// selectors (LabelSelector.Matches), so every service agrees on both.
+
+// LabelSelector selects resources by their effective labels. All of
+// match_labels and all of match_expressions must hold. A selector with
+// neither is invalid and matches nothing: selecting every resource has to be
+// said outright, never by leaving a selector empty.
+message LabelSelector {
+	// match_labels requires each key to be set with exactly this value. An
+	// empty value requires the key to be set with an empty value.
+	map<string, string> match_labels = 1;
+
+	// match_expressions are further requirements, all of which must hold.
+	repeated LabelRequirement match_expressions = 2;
+}
+
+// LabelRequirement is one condition on a label key.
+message LabelRequirement {
+	// key is the label key the requirement is about.
+	string key = 1;
+
+	// operator relates the key to values.
+	LabelOperator operator = 2;
+
+	// values are the values for LABEL_OPERATOR_IN and LABEL_OPERATOR_NOT_IN
+	// (at least one). They must be empty for the other operators.
+	repeated string values = 3;
+}
+
+// LabelOperator is how a LabelRequirement relates a key to its values.
+enum LabelOperator {
+	// Unspecified; invalid in a requirement.
+	LABEL_OPERATOR_UNSPECIFIED = 0;
+	// The key is set and its value is one of values.
+	LABEL_OPERATOR_IN = 1;
+	// The key is not set, or its value is none of values.
+	LABEL_OPERATOR_NOT_IN = 2;
+	// The key is set, with any value.
+	LABEL_OPERATOR_EXISTS = 3;
+	// The key is not set.
+	LABEL_OPERATOR_DOES_NOT_EXIST = 4;
+}
