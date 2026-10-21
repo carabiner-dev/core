@@ -24,7 +24,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// MemberRole is a member's place in the project's graph.
+// MemberRole is a member's place in the project's graph, derived from the
+// edges by the Go package's DeriveMemberRoles so every service agrees.
 type MemberRole int32
 
 const (
@@ -39,8 +40,12 @@ const (
 	// A root reaches it by any other edge type: tests, documentation,
 	// configuration, packaging, tooling, variants.
 	MemberRole_MEMBER_ROLE_SUPPORTING MemberRole = 3
-	// No edge reaches it. Every member of a group project is one.
+	// No root reaches it and it reaches no root. Every member of a group
+	// project is one.
 	MemberRole_MEMBER_ROLE_UNRELATED MemberRole = 4
+	// It reaches a root through dependency edges: a consumer of a
+	// deliverable, such as a CLI built on the main repository.
+	MemberRole_MEMBER_ROLE_DEPENDENT MemberRole = 5
 )
 
 // Enum value maps for MemberRole.
@@ -51,6 +56,7 @@ var (
 		2: "MEMBER_ROLE_DEPENDENCY",
 		3: "MEMBER_ROLE_SUPPORTING",
 		4: "MEMBER_ROLE_UNRELATED",
+		5: "MEMBER_ROLE_DEPENDENT",
 	}
 	MemberRole_value = map[string]int32{
 		"MEMBER_ROLE_UNSPECIFIED": 0,
@@ -58,6 +64,7 @@ var (
 		"MEMBER_ROLE_DEPENDENCY":  2,
 		"MEMBER_ROLE_SUPPORTING":  3,
 		"MEMBER_ROLE_UNRELATED":   4,
+		"MEMBER_ROLE_DEPENDENT":   5,
 	}
 )
 
@@ -352,14 +359,15 @@ const file_carabiner_core_v1_members_proto_rawDesc = "" +
 	"\x12relationship_types\x18\x02 \x03(\tR\x11relationshipTypes\x12,\n" +
 	"\x12folder_path_prefix\x18\x03 \x01(\tR\x10folderPathPrefix\x123\n" +
 	"\x05kinds\x18\x04 \x03(\x0e2\x1d.carabiner.core.v1.MemberKindR\x05kinds\x128\n" +
-	"\x06labels\x18\x05 \x01(\v2 .carabiner.core.v1.LabelSelectorR\x06labels*\x92\x01\n" +
+	"\x06labels\x18\x05 \x01(\v2 .carabiner.core.v1.LabelSelectorR\x06labels*\xad\x01\n" +
 	"\n" +
 	"MemberRole\x12\x1b\n" +
 	"\x17MEMBER_ROLE_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10MEMBER_ROLE_ROOT\x10\x01\x12\x1a\n" +
 	"\x16MEMBER_ROLE_DEPENDENCY\x10\x02\x12\x1a\n" +
 	"\x16MEMBER_ROLE_SUPPORTING\x10\x03\x12\x19\n" +
-	"\x15MEMBER_ROLE_UNRELATED\x10\x04*_\n" +
+	"\x15MEMBER_ROLE_UNRELATED\x10\x04\x12\x19\n" +
+	"\x15MEMBER_ROLE_DEPENDENT\x10\x05*_\n" +
 	"\n" +
 	"MemberKind\x12\x1b\n" +
 	"\x17MEMBER_KIND_UNSPECIFIED\x10\x00\x12\x1a\n" +

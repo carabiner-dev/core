@@ -180,10 +180,14 @@ exactly one, `Key` renders it (`project`, `repository:<id>`,
 
 ### Roles and MemberSelector
 
-A member's role is derived from the edges: **root** (described by the
+A member's role is derived from the edges (`DeriveMemberRoles`, given the
+members, the edges and any implicit root): **root** (described by the
 project, or the sole member of a single-repository project), **dependency**
-(a root reaches it through dependency edges), **supporting** (a root reaches
-it by any other edge), **unrelated** (no edge). A `MemberSelector` admits the
+(a root reaches it through dependency edges alone, transitively),
+**supporting** (a root reaches it through at least one other edge type),
+**dependent** (it reaches a root through dependency edges: a consumer of a
+deliverable), **unrelated** (none of those). A root is a root whatever else
+holds. A `MemberSelector` admits the
 members every set field allows: `roles`, `relationship_types` (reached by one
 of these), `folder_path_prefix` (`/build` reaches `/build` and below, `/`
 everything), `kinds` (repository, codebase) and `labels` (a `LabelSelector`

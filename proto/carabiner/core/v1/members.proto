@@ -35,7 +35,8 @@ message ElementRef {
 	}
 }
 
-// MemberRole is a member's place in the project's graph.
+// MemberRole is a member's place in the project's graph, derived from the
+// edges by the Go package's DeriveMemberRoles so every service agrees.
 enum MemberRole {
 	// Unspecified; invalid in a selector.
 	MEMBER_ROLE_UNSPECIFIED = 0;
@@ -48,8 +49,12 @@ enum MemberRole {
 	// A root reaches it by any other edge type: tests, documentation,
 	// configuration, packaging, tooling, variants.
 	MEMBER_ROLE_SUPPORTING = 3;
-	// No edge reaches it. Every member of a group project is one.
+	// No root reaches it and it reaches no root. Every member of a group
+	// project is one.
 	MEMBER_ROLE_UNRELATED = 4;
+	// It reaches a root through dependency edges: a consumer of a
+	// deliverable, such as a CLI built on the main repository.
+	MEMBER_ROLE_DEPENDENT = 5;
 }
 
 // MemberKind is what kind of resource a member is.
