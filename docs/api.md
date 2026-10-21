@@ -150,6 +150,58 @@ ok := selector.Matches(effective)           // nil and empty match nothing
 `ValidateLabels` and `Validate` wrap `core.ErrInvalidLabel` and
 `core.ErrInvalidSelector`.
 
+## Project members
+
+A project's members are the repositories and codebases placed in its
+folders, related by typed edges. The vocabulary is in
+[`members.proto`](../proto/carabiner/core/v1/members.proto); keystone stores
+the placements and the edges and derives each member's role, and every
+service evaluates a selector with the Go helpers below, so they agree. The
+design is the platform repo's `docs/projects/README.md`.
+
+### Relationship types
+
+An edge's type is a string drawn from SPDX 3.0.1's `RelationshipType`
+vocabulary, spelled as SPDX spells it, so a project renders as an SPDX
+document: `describes` (the project marks a root, a deliverable), `dependsOn`
+and `hasOptionalDependency` (a dependency), `hasTest`, `hasDocumentation`,
+`hasExample`, `configures`, `packagedBy`, `usesTool`, `hasVariant`,
+`descendantOf` (a supporting member), and `other` with a comment.
+`ProjectRelationshipTypes` lists them. `describes` goes from the project to
+a member; every other type goes between two different members
+(`ValidateProjectRelationship`).
+
+### ElementRef
+
+Names one end of an edge or one member: the project itself (only ever a
+source), a repository by id, or a codebase by id. `Validate` requires
+exactly one, `Key` renders it (`project`, `repository:<id>`,
+`codebase:<id>`) and `Same` compares two.
+
+### Roles and MemberSelector
+
+A member's role is derived from the edges: **root** (described by the
+project, or the sole member of a single-repository project), **dependency**
+(a root reaches it through dependency edges), **supporting** (a root reaches
+it by any other edge), **unrelated** (no edge). A `MemberSelector` admits the
+members every set field allows: `roles`, `relationship_types` (reached by one
+of these), `folder_path_prefix` (`/build` reaches `/build` and below, `/`
+everything), `kinds` (repository, codebase) and `labels` (a `LabelSelector`
+over effective labels). One with no field set is invalid and matches
+nothing. `Validate` and `Matches(Member)` are the Go helpers; `Member` is what
+a service hands the evaluator per placement.
+
+### Codebases
+
+A codebase is a buildable unit inside a repository as unpack finds it, named
+`<language>:<path>`. `CodebaseSourceID` and `ParseCodebaseSourceID` fix the
+canonical form (`CanonicalCodebasePath`: forward slashes, no leading `./`,
+no trailing slash, `.` for the root; `ValidateCodebaseLanguage`: lowercase,
+the label value syntax), so unpack and keystone key the same codebase by the
+same string. The platform labels every codebase with
+`carabiner.dev/language` (`CodebaseLanguageLabelKey`); its path is not a
+label, since label values cannot hold a slash.
+
 ## Events
 
 Events capture execution data from CI/CD runs. They are defined in

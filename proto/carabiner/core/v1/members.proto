@@ -1,0 +1,87 @@
+// SPDX-FileCopyrightText: Copyright 2026 Carabiner Systems, Inc
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+package carabiner.core.v1;
+
+import "carabiner/core/v1/labels.proto";
+
+option go_package = "github.com/carabiner-dev/core/api/carabiner/core/v1;core";
+
+// A project's members are the repositories and codebases placed in its
+// folders, related to one another by typed edges whose types are a subset
+// of SPDX 3's relationship vocabulary (the Go package lists it). A member's
+// role in the project is derived from the edges and never stored: a root is
+// what the project describes, a dependency what a root reaches through a
+// dependency edge. The messages here name an element of a project
+// (ElementRef) and select part of one (MemberSelector). keystone stores the
+// placements and the edges and derives the roles; every service evaluates a
+// selector with the Go package, so they all agree.
+
+// ElementRef names one end of a relationship or one member of a project.
+message ElementRef {
+	// ref is the element: the project itself or one of its members. Exactly
+	// one is set.
+	oneof ref {
+		// project is the project itself. It is only ever the source of an
+		// edge, never a member.
+		bool project = 1;
+
+		// repository_id is a repository's platform id.
+		string repository_id = 2;
+
+		// codebase_id is a codebase's platform id.
+		string codebase_id = 3;
+	}
+}
+
+// MemberRole is a member's place in the project's graph.
+enum MemberRole {
+	// Unspecified; invalid in a selector.
+	MEMBER_ROLE_UNSPECIFIED = 0;
+	// The project describes it: a deliverable. The sole member of a
+	// single-repository project is a root without an edge.
+	MEMBER_ROLE_ROOT = 1;
+	// A root reaches it through dependency edges (dependsOn,
+	// hasOptionalDependency), transitively.
+	MEMBER_ROLE_DEPENDENCY = 2;
+	// A root reaches it by any other edge type: tests, documentation,
+	// configuration, packaging, tooling, variants.
+	MEMBER_ROLE_SUPPORTING = 3;
+	// No edge reaches it. Every member of a group project is one.
+	MEMBER_ROLE_UNRELATED = 4;
+}
+
+// MemberKind is what kind of resource a member is.
+enum MemberKind {
+	// Unspecified; invalid in a selector.
+	MEMBER_KIND_UNSPECIFIED = 0;
+	// A repository.
+	MEMBER_KIND_REPOSITORY = 1;
+	// A codebase inside a repository.
+	MEMBER_KIND_CODEBASE = 2;
+}
+
+// MemberSelector selects part of a project: the members every set field
+// admits. A selector with no field set is invalid and matches nothing:
+// selecting every member is said with all four roles, or a label selector
+// that matches all, never by leaving the selector empty.
+message MemberSelector {
+	// roles admits members in one of these roles.
+	repeated MemberRole roles = 1;
+
+	// relationship_types admits members a root reaches by one of these edge
+	// types (a subset of SPDX 3's vocabulary). Roots and unrelated members
+	// are reached by none.
+	repeated string relationship_types = 2;
+
+	// folder_path_prefix admits members placed in this folder or below it:
+	// "/build" reaches /build and /build/ci. "/" reaches every member.
+	string folder_path_prefix = 3;
+
+	// kinds admits members of one of these kinds.
+	repeated MemberKind kinds = 4;
+
+	// labels admits members whose effective labels satisfy the selector.
+	LabelSelector labels = 5;
+}
