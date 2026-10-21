@@ -136,7 +136,7 @@ func TestMemberSelectorMatches(t *testing.T) {
 	for _, c := range cases {
 		var got []string
 		for name, m := range members {
-			if c.selector.Matches(m) {
+			if c.selector.Matches(&m) {
 				got = append(got, name)
 			}
 		}

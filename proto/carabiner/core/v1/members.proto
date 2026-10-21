@@ -90,3 +90,24 @@ message MemberSelector {
 	// labels admits members whose effective labels satisfy the selector.
 	LabelSelector labels = 5;
 }
+
+// TargetAnchor is where a compliance target is set in a project: the point
+// whose contents the target reaches, and inherit it. The project contains
+// every member; a folder the members placed in it and below it; a
+// repository itself and its codebases; a codebase itself. A target set
+// nearer a member replaces, for that member, inherited targets of the same
+// framework (the Go package resolves a member's effective targets).
+message TargetAnchor {
+	// at is the anchor. Exactly one is set.
+	oneof at {
+		// project anchors on the whole project.
+		bool project = 1;
+		// folder_path anchors on a folder and everything below it, as
+		// keystone renders the path ("/build").
+		string folder_path = 2;
+		// repository_id anchors on a repository and its codebases.
+		string repository_id = 3;
+		// codebase_id anchors on one codebase.
+		string codebase_id = 4;
+	}
+}

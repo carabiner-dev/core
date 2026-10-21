@@ -104,10 +104,16 @@ func (r *ElementRef) Same(o *ElementRef) bool {
 }
 
 // Member is what a selector is evaluated against: one member of a project
-// as the service that holds the graph derives it.
+// as the service that holds the graph derives it. It is passed by pointer
+// and never changed by this package.
 type Member struct {
+	// ID is the repository's or the codebase's id.
+	ID string
 	// Kind is what the member is.
 	Kind MemberKind
+	// RepositoryID is, for a codebase, the repository it lives in; empty
+	// for a repository.
+	RepositoryID string
 	// Role is the member's place in the graph.
 	Role MemberRole
 	// ReachedBy are the relationship types by which a root reaches the
@@ -171,7 +177,7 @@ func (s *MemberSelector) Validate() error {
 // Matches reports whether a member satisfies the selector: every set field
 // admits it. A nil or empty selector matches nothing, and so does one that
 // does not validate, so a selector never selects more than it says.
-func (s *MemberSelector) Matches(m Member) bool {
+func (s *MemberSelector) Matches(m *Member) bool {
 	if s.IsEmpty() || s.Validate() != nil {
 		return false
 	}

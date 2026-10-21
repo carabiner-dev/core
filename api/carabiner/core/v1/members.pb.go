@@ -342,6 +342,133 @@ func (x *MemberSelector) GetLabels() *LabelSelector {
 	return nil
 }
 
+// TargetAnchor is where a compliance target is set in a project: the point
+// whose contents the target reaches, and inherit it. The project contains
+// every member; a folder the members placed in it and below it; a
+// repository itself and its codebases; a codebase itself. A target set
+// nearer a member replaces, for that member, inherited targets of the same
+// framework (the Go package resolves a member's effective targets).
+type TargetAnchor struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// at is the anchor. Exactly one is set.
+	//
+	// Types that are valid to be assigned to At:
+	//
+	//	*TargetAnchor_Project
+	//	*TargetAnchor_FolderPath
+	//	*TargetAnchor_RepositoryId
+	//	*TargetAnchor_CodebaseId
+	At            isTargetAnchor_At `protobuf_oneof:"at"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TargetAnchor) Reset() {
+	*x = TargetAnchor{}
+	mi := &file_carabiner_core_v1_members_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TargetAnchor) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TargetAnchor) ProtoMessage() {}
+
+func (x *TargetAnchor) ProtoReflect() protoreflect.Message {
+	mi := &file_carabiner_core_v1_members_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TargetAnchor.ProtoReflect.Descriptor instead.
+func (*TargetAnchor) Descriptor() ([]byte, []int) {
+	return file_carabiner_core_v1_members_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *TargetAnchor) GetAt() isTargetAnchor_At {
+	if x != nil {
+		return x.At
+	}
+	return nil
+}
+
+func (x *TargetAnchor) GetProject() bool {
+	if x != nil {
+		if x, ok := x.At.(*TargetAnchor_Project); ok {
+			return x.Project
+		}
+	}
+	return false
+}
+
+func (x *TargetAnchor) GetFolderPath() string {
+	if x != nil {
+		if x, ok := x.At.(*TargetAnchor_FolderPath); ok {
+			return x.FolderPath
+		}
+	}
+	return ""
+}
+
+func (x *TargetAnchor) GetRepositoryId() string {
+	if x != nil {
+		if x, ok := x.At.(*TargetAnchor_RepositoryId); ok {
+			return x.RepositoryId
+		}
+	}
+	return ""
+}
+
+func (x *TargetAnchor) GetCodebaseId() string {
+	if x != nil {
+		if x, ok := x.At.(*TargetAnchor_CodebaseId); ok {
+			return x.CodebaseId
+		}
+	}
+	return ""
+}
+
+type isTargetAnchor_At interface {
+	isTargetAnchor_At()
+}
+
+type TargetAnchor_Project struct {
+	// project anchors on the whole project.
+	Project bool `protobuf:"varint,1,opt,name=project,proto3,oneof"`
+}
+
+type TargetAnchor_FolderPath struct {
+	// folder_path anchors on a folder and everything below it, as
+	// keystone renders the path ("/build").
+	FolderPath string `protobuf:"bytes,2,opt,name=folder_path,json=folderPath,proto3,oneof"`
+}
+
+type TargetAnchor_RepositoryId struct {
+	// repository_id anchors on a repository and its codebases.
+	RepositoryId string `protobuf:"bytes,3,opt,name=repository_id,json=repositoryId,proto3,oneof"`
+}
+
+type TargetAnchor_CodebaseId struct {
+	// codebase_id anchors on one codebase.
+	CodebaseId string `protobuf:"bytes,4,opt,name=codebase_id,json=codebaseId,proto3,oneof"`
+}
+
+func (*TargetAnchor_Project) isTargetAnchor_At() {}
+
+func (*TargetAnchor_FolderPath) isTargetAnchor_At() {}
+
+func (*TargetAnchor_RepositoryId) isTargetAnchor_At() {}
+
+func (*TargetAnchor_CodebaseId) isTargetAnchor_At() {}
+
 var File_carabiner_core_v1_members_proto protoreflect.FileDescriptor
 
 const file_carabiner_core_v1_members_proto_rawDesc = "" +
@@ -359,7 +486,15 @@ const file_carabiner_core_v1_members_proto_rawDesc = "" +
 	"\x12relationship_types\x18\x02 \x03(\tR\x11relationshipTypes\x12,\n" +
 	"\x12folder_path_prefix\x18\x03 \x01(\tR\x10folderPathPrefix\x123\n" +
 	"\x05kinds\x18\x04 \x03(\x0e2\x1d.carabiner.core.v1.MemberKindR\x05kinds\x128\n" +
-	"\x06labels\x18\x05 \x01(\v2 .carabiner.core.v1.LabelSelectorR\x06labels*\xad\x01\n" +
+	"\x06labels\x18\x05 \x01(\v2 .carabiner.core.v1.LabelSelectorR\x06labels\"\x9d\x01\n" +
+	"\fTargetAnchor\x12\x1a\n" +
+	"\aproject\x18\x01 \x01(\bH\x00R\aproject\x12!\n" +
+	"\vfolder_path\x18\x02 \x01(\tH\x00R\n" +
+	"folderPath\x12%\n" +
+	"\rrepository_id\x18\x03 \x01(\tH\x00R\frepositoryId\x12!\n" +
+	"\vcodebase_id\x18\x04 \x01(\tH\x00R\n" +
+	"codebaseIdB\x04\n" +
+	"\x02at*\xad\x01\n" +
 	"\n" +
 	"MemberRole\x12\x1b\n" +
 	"\x17MEMBER_ROLE_UNSPECIFIED\x10\x00\x12\x14\n" +
@@ -388,18 +523,19 @@ func file_carabiner_core_v1_members_proto_rawDescGZIP() []byte {
 }
 
 var file_carabiner_core_v1_members_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_carabiner_core_v1_members_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_carabiner_core_v1_members_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_carabiner_core_v1_members_proto_goTypes = []any{
 	(MemberRole)(0),        // 0: carabiner.core.v1.MemberRole
 	(MemberKind)(0),        // 1: carabiner.core.v1.MemberKind
 	(*ElementRef)(nil),     // 2: carabiner.core.v1.ElementRef
 	(*MemberSelector)(nil), // 3: carabiner.core.v1.MemberSelector
-	(*LabelSelector)(nil),  // 4: carabiner.core.v1.LabelSelector
+	(*TargetAnchor)(nil),   // 4: carabiner.core.v1.TargetAnchor
+	(*LabelSelector)(nil),  // 5: carabiner.core.v1.LabelSelector
 }
 var file_carabiner_core_v1_members_proto_depIdxs = []int32{
 	0, // 0: carabiner.core.v1.MemberSelector.roles:type_name -> carabiner.core.v1.MemberRole
 	1, // 1: carabiner.core.v1.MemberSelector.kinds:type_name -> carabiner.core.v1.MemberKind
-	4, // 2: carabiner.core.v1.MemberSelector.labels:type_name -> carabiner.core.v1.LabelSelector
+	5, // 2: carabiner.core.v1.MemberSelector.labels:type_name -> carabiner.core.v1.LabelSelector
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
@@ -418,13 +554,19 @@ func file_carabiner_core_v1_members_proto_init() {
 		(*ElementRef_RepositoryId)(nil),
 		(*ElementRef_CodebaseId)(nil),
 	}
+	file_carabiner_core_v1_members_proto_msgTypes[2].OneofWrappers = []any{
+		(*TargetAnchor_Project)(nil),
+		(*TargetAnchor_FolderPath)(nil),
+		(*TargetAnchor_RepositoryId)(nil),
+		(*TargetAnchor_CodebaseId)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_carabiner_core_v1_members_proto_rawDesc), len(file_carabiner_core_v1_members_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

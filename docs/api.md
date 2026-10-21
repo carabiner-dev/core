@@ -192,8 +192,27 @@ members every set field allows: `roles`, `relationship_types` (reached by one
 of these), `folder_path_prefix` (`/build` reaches `/build` and below, `/`
 everything), `kinds` (repository, codebase) and `labels` (a `LabelSelector`
 over effective labels). One with no field set is invalid and matches
-nothing. `Validate` and `Matches(Member)` are the Go helpers; `Member` is what
-a service hands the evaluator per placement.
+nothing. `Validate` and `Matches(*Member)` are the Go helpers; `Member` is what
+a service hands the evaluator per placement (its id and kind, for a codebase
+its repository id, its role, how it is reached, its folder path and its
+effective labels).
+
+### Compliance targets
+
+A `TargetAnchor` is where a compliance target is set: the `project`, a
+`folder_path` (it and everything below), a `repository_id` (it and its
+codebases) or a `codebase_id`. `Validate`, `Contains(*Member)` and `Key` are
+its helpers. A target (the `Target` interface: anchor, optional
+`MemberSelector`, framework id, `replaces`) reaches a member when its anchor
+contains it and its selector, if set, matches it (`TargetReaches`).
+`EffectiveTargets(member, targets)` resolves inheritance: walking the
+member's anchors from the nearest out (codebase, repository, folders from
+the deepest up, project), the targets reaching it at an anchor apply unless
+their framework is closed; after the anchor their frameworks close, and so
+do the ones they list in `replaces` (`ReplacesAll`, `"*"`, closes everything
+and ends the walk). Every target at one anchor applies. Targets themselves
+are nomos's; this package only resolves them, so keystone, nomos, the api
+and the evaluator agree.
 
 ### Codebases
 
