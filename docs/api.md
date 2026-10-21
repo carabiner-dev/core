@@ -206,6 +206,24 @@ same string. The platform labels every codebase with
 `carabiner.dev/language` (`CodebaseLanguageLabelKey`); its path is not a
 label, since label values cannot hold a slash.
 
+A **codebase URI** names a codebase in the platform's registry, with an
+optional revision, so every place that mentions one spells it the same way:
+
+```
+codebase://<system>/<slug>[@<revision>]#<language>:<path>
+codebase://github/acme/widgets#golang:backend
+codebase://gitlab/platform/tools/widgets@3f2a9c#npm:web
+```
+
+The system is keystone's registry name (`github`, not `github.com`), the
+slug the repository's under it (as many segments as the system needs), the
+revision a commit when the URI is taken at one, and the fragment the
+canonical codebase identifier, which is why it comes last: everything before
+the last `#` is the repository. An attestation subject names a codebase
+without the revision (its digest carries the commit); an SBOM package name
+or a policy may carry it. `CodebaseURI`, `NewCodebaseURI`, `ParseCodebaseURI`,
+`String` and `WithoutRevision` are the Go helpers.
+
 ## Events
 
 Events capture execution data from CI/CD runs. They are defined in
