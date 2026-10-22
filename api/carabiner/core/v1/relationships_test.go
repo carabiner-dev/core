@@ -22,10 +22,12 @@ func codebaseRef(id string) *ElementRef {
 }
 
 // The allowed types are SPDX 3.0.1 values, spelled as spdx3's vocabulary
-// spells them, so a project renders as an SPDX document without a mapping.
+// spells them, so a project renders as an SPDX document without a mapping;
+// component is the one type of our own (SPDX has none for a part that is a
+// separate artifact).
 func TestProjectRelationshipTypesAreSPDX(t *testing.T) {
 	spdx := []string{
-		"configures", "dependsOn", "descendantOf", "describes", "hasDocumentation", "hasExample",
+		"component", "configures", "dependsOn", "descendantOf", "describes", "hasDocumentation", "hasExample",
 		"hasOptionalDependency", "hasTest", "hasVariant", "other", "packagedBy", "usesTool",
 	}
 	if !slices.Equal(ProjectRelationshipTypes, spdx) {
@@ -70,6 +72,7 @@ func TestValidateProjectRelationship(t *testing.T) {
 		{"codebase depends on a repository", codebaseRef("c1"), repoRef("r2"), RelationshipDependsOn, ""},
 		{"repository has a test repository", repoRef("r1"), repoRef("r2"), RelationshipHasTest, ""},
 		{"other with a comment", repoRef("r1"), repoRef("r2"), RelationshipOther, "shares a release train"},
+		{"a component of the main repository", repoRef("r1"), codebaseRef("c1"), RelationshipComponent, ""},
 	}
 	for _, c := range valid {
 		if err := ValidateProjectRelationship(c.from, c.to, c.typ, c.comment); err != nil {

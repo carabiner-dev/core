@@ -166,7 +166,9 @@ vocabulary, spelled as SPDX spells it, so a project renders as an SPDX
 document: `describes` (the project marks a root, a deliverable), `dependsOn`
 and `hasOptionalDependency` (a dependency), `hasTest`, `hasDocumentation`,
 `hasExample`, `configures`, `packagedBy`, `usesTool`, `hasVariant`,
-`descendantOf` (a supporting member), and `other` with a comment.
+`descendantOf` (a supporting member), and `other` with a comment; plus
+`component`, our own, for a part the source is assembled from that lives in
+its own repository or codebase (main → component; a supporting member).
 `ProjectRelationshipTypes` lists them. `describes` goes from the project to
 a member; every other type goes between two different members
 (`ValidateProjectRelationship`).

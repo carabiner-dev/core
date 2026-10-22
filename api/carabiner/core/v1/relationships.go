@@ -42,12 +42,19 @@ const (
 	// RelationshipDescendantOf: the source descends from the target (moved
 	// or forked code).
 	RelationshipDescendantOf = "descendantOf"
+	// RelationshipComponent: the target is a component of the source, a part
+	// the source is assembled from that lives in its own repository or
+	// codebase (a plugin, a module, a service of a larger product). Our own
+	// type: SPDX's contains is for one artifact inside another, which a
+	// separate repository is not. A component is a supporting member.
+	RelationshipComponent = "component"
 	// RelationshipOther is anything else, said in the edge's comment.
 	RelationshipOther = "other"
 )
 
 // ProjectRelationshipTypes lists the types a project edge may carry, sorted.
 var ProjectRelationshipTypes = []string{
+	RelationshipComponent,
 	RelationshipConfigures,
 	RelationshipDependsOn,
 	RelationshipDescendantOf,
