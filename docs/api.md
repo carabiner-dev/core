@@ -252,14 +252,40 @@ Events capture execution data from CI/CD runs. They are defined in
 
 ### EventType
 
-An enum describing the lifecycle state of an execution event.
+An event's type is a `SubjectType` (what the event is about: a revision, a
+tag, a pipeline run, a change, …) and a `Predicate` (the lifecycle verb:
+created, queued, started, finished, merged, …). An event carries one
+principal `Subject` of that type with its full data, and `related` subjects:
+coordinate-only descriptors of the objects reachable from it, each in a
+`SubjectRole` (`inRepository`, `onBranch`, `head`, `base`, `tagged`,
+`merge`, …). An attester chooses what to sign over by selecting from the
+principal and the related subjects.
 
-| Value          | Number | Name       | Description                              |
-|----------------|--------|------------|------------------------------------------|
-| ETYPE_UNKONWN  | 0      |            | Default/unknown event type.              |
-| ETYPE_STARTED  | 1      | started    | The execution has started.               |
-| ETYPE_FINISHED | 2      | finished   | The execution has finished.              |
-| ETYPE_QUEUED   | 3      | queued     | The execution has been queued.           |
+### Event kinds
+
+Not every subject and predicate form an event, and each event carries a
+fixed neighborhood. The catalog of **event kinds** (`kinds.go`) is the
+contract between the system links that build events and the consumers that
+select subjects from them: a link emits an event of a kind with the related
+subjects the kind lists (any of them may be absent), and a rule may only
+ask for subjects the kind yields. A kind yields its principal subject (its
+subject type, in the unspecified role) and every related subject (type and
+role).
+
+| Kind | Related subjects (role → type) |
+|------|--------------------------------|
+| revision.created | inRepository → repository, onBranch → branch |
+| tag.created | inRepository → repository, tagged → revision |
+| pipelineRun.queued / started / finished | inRepository → repository, head → revision |
+| change.created / updated / reviewed / abandoned | inRepository → repository, head → revision, base → revision, sourceBranch → branch, targetBranch → branch |
+| change.merged | the change kinds' subjects, plus merge → revision |
+
+Go helpers: `EventKinds()` lists the catalog in a stable order;
+`LookupEventKind(type)` finds a kind; `kind.Subjects()` lists what it yields
+as `SubjectKind{Type, Role}` values and `kind.Yields(subject)` checks one;
+`ValidateEvent(event)` refuses an event whose type is not a kind or whose
+related subjects its kind does not list (`UnknownEventKindError`,
+`UnexpectedSubjectError`).
 
 ### PipelineRun
 
