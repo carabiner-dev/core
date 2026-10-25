@@ -82,16 +82,32 @@ func TestLookupEventKindAndSubjects(t *testing.T) {
 	}
 }
 
+// widgetsRepoURI is the name of the repository the fixtures are about; its
+// platform identity is widgetsRepoID.
+const (
+	widgetsRepoURI = "repository://github.com/acme/widgets"
+	widgetsRepoID  = "1b2023ec-394f-4214-b516-df7724442e0d"
+)
+
 func TestValidateEvent(t *testing.T) {
 	push := &Event{
 		Type: &EventType{Subject: SubjectType_SUBJECT_TYPE_REVISION, Predicate: Predicate_PREDICATE_CREATED},
 		Related: []*RelatedSubject{
-			{Role: SubjectRole_SUBJECT_ROLE_IN_REPOSITORY, Type: SubjectType_SUBJECT_TYPE_REPOSITORY},
+			{Role: SubjectRole_SUBJECT_ROLE_IN_REPOSITORY, Type: SubjectType_SUBJECT_TYPE_REPOSITORY, Descriptor_: &ResourceDescriptor{Id: widgetsRepoID, Uri: widgetsRepoURI}},
 			{Role: SubjectRole_SUBJECT_ROLE_ON_BRANCH, Type: SubjectType_SUBJECT_TYPE_BRANCH},
 		},
 	}
 	if err := ValidateEvent(push); err != nil {
 		t.Fatalf("a well-formed push is refused: %v", err)
+	}
+	// The repository must carry its platform identity; its name is not one.
+	var missing *MissingIdentityError
+	err := ValidateEvent(&Event{
+		Type:    push.GetType(),
+		Related: []*RelatedSubject{{Role: SubjectRole_SUBJECT_ROLE_IN_REPOSITORY, Type: SubjectType_SUBJECT_TYPE_REPOSITORY, Descriptor_: &ResourceDescriptor{Uri: widgetsRepoURI}}},
+	})
+	if !errors.As(err, &missing) || missing.Error() != "event kind revision.created: the repository subject in role inRepository has no platform identity (descriptor id)" {
+		t.Errorf("repository without identity: %v", err)
 	}
 	// A related subject may be missing.
 	if err := ValidateEvent(&Event{Type: push.GetType()}); err != nil {
@@ -99,7 +115,7 @@ func TestValidateEvent(t *testing.T) {
 	}
 
 	var unknown *UnknownEventKindError
-	err := ValidateEvent(&Event{Type: &EventType{Subject: SubjectType_SUBJECT_TYPE_BRANCH, Predicate: Predicate_PREDICATE_CREATED}})
+	err = ValidateEvent(&Event{Type: &EventType{Subject: SubjectType_SUBJECT_TYPE_BRANCH, Predicate: Predicate_PREDICATE_CREATED}})
 	if !errors.As(err, &unknown) || unknown.Error() != "unknown event kind branch.created" {
 		t.Errorf("unknown kind: %v", err)
 	}

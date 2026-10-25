@@ -426,6 +426,13 @@ message ResourceDescriptor {
 	// annotations carries additional, machine-readable metadata about the
 	// resource (e.g. carabiner role/type/ids).
 	google.protobuf.Struct annotations = 7;
+
+	// id is the resource's platform identity when the resource is a platform
+	// object: the keystone UUID of a repository, for instance. Consumers
+	// route, authorize and match by it; name and uri are what humans read
+	// and may change under them. Required on a related subject of type
+	// repository (see docs/identifiers in the platform repo).
+	string id = 8;
 }
 
 // SubjectType is the kind of a subject. The first group are CDEvents-standard

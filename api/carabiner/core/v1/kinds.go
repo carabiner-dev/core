@@ -128,7 +128,9 @@ func (k EventKind) Yields(s SubjectKind) bool {
 // ValidateEvent checks an event against its kind: the type must be a kind the
 // platform defines and every related subject must be one the kind lists. It
 // does not require every listed related subject to be present, since a
-// producer may lack one (a run without a head revision).
+// producer may lack one (a run without a head revision). A related
+// repository must carry its platform identity (descriptor id): consumers
+// route and authorize by it, never by the repository's name.
 func ValidateEvent(e *Event) error {
 	kind, ok := LookupEventKind(e.GetType())
 	if !ok {
@@ -139,8 +141,23 @@ func ValidateEvent(e *Event) error {
 		if s.Role == SubjectRole_SUBJECT_ROLE_UNSPECIFIED || !kind.Yields(s) {
 			return &UnexpectedSubjectError{Kind: kind, Subject: s}
 		}
+		if s.Type == SubjectType_SUBJECT_TYPE_REPOSITORY && rel.GetDescriptor_().GetId() == "" {
+			return &MissingIdentityError{Kind: kind, Subject: s}
+		}
 	}
 	return nil
+}
+
+// MissingIdentityError says a related subject that must carry its platform
+// identity (a repository) came without one.
+type MissingIdentityError struct {
+	Kind    EventKind
+	Subject SubjectKind
+}
+
+func (e *MissingIdentityError) Error() string {
+	return "event kind " + SubjectTypeName(e.Kind.Subject) + "." + PredicateName(e.Kind.Predicate) +
+		": the " + SubjectTypeName(e.Subject.Type) + " subject in role " + SubjectRoleName(e.Subject.Role) + " has no platform identity (descriptor id)"
 }
 
 // UnknownEventKindError says an event type is not a kind the platform

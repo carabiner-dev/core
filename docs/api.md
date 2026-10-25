@@ -280,12 +280,22 @@ role).
 | change.created / updated / reviewed / abandoned | inRepository → repository, head → revision, base → revision, sourceBranch → branch, targetBranch → branch |
 | change.merged | the change kinds' subjects, plus merge → revision |
 
+A related subject's `ResourceDescriptor` names the object for humans
+(`name`, `uri`: `repository://github.com/<owner>/<repo>` for a repository)
+and, when the object is a platform object, identifies it by its platform
+identity in `id` (the keystone UUID). A related **repository must carry its
+`id`**: consumers route, authorize and match by it, and a rename or a
+transfer changes the `uri` without changing what the event is about. The
+link that emits the event is the only party that resolves the source's
+coordinates to that identity.
+
 Go helpers: `EventKinds()` lists the catalog in a stable order;
 `LookupEventKind(type)` finds a kind; `kind.Subjects()` lists what it yields
 as `SubjectKind{Type, Role}` values and `kind.Yields(subject)` checks one;
-`ValidateEvent(event)` refuses an event whose type is not a kind or whose
-related subjects its kind does not list (`UnknownEventKindError`,
-`UnexpectedSubjectError`).
+`ValidateEvent(event)` refuses an event whose type is not a kind, whose
+related subjects its kind does not list, or whose related repository has no
+`id` (`UnknownEventKindError`, `UnexpectedSubjectError`,
+`MissingIdentityError`).
 
 ### PipelineRun
 

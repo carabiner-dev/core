@@ -2087,7 +2087,13 @@ type ResourceDescriptor struct {
 	MediaType string `protobuf:"bytes,6,opt,name=media_type,json=mediaType,proto3" json:"media_type,omitempty"`
 	// annotations carries additional, machine-readable metadata about the
 	// resource (e.g. carabiner role/type/ids).
-	Annotations   *structpb.Struct `protobuf:"bytes,7,opt,name=annotations,proto3" json:"annotations,omitempty"`
+	Annotations *structpb.Struct `protobuf:"bytes,7,opt,name=annotations,proto3" json:"annotations,omitempty"`
+	// id is the resource's platform identity when the resource is a platform
+	// object: the keystone UUID of a repository, for instance. Consumers
+	// route, authorize and match by it; name and uri are what humans read
+	// and may change under them. Required on a related subject of type
+	// repository (see docs/identifiers in the platform repo).
+	Id            string `protobuf:"bytes,8,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2169,6 +2175,13 @@ func (x *ResourceDescriptor) GetAnnotations() *structpb.Struct {
 		return x.Annotations
 	}
 	return nil
+}
+
+func (x *ResourceDescriptor) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
 }
 
 var File_carabiner_core_v1_events_proto protoreflect.FileDescriptor
@@ -2311,7 +2324,7 @@ const file_carabiner_core_v1_events_proto_rawDesc = "" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x14\n" +
 	"\x05email\x18\x04 \x01(\tR\x05email\x120\n" +
 	"\x04type\x18\x05 \x01(\x0e2\x1c.carabiner.core.v1.ActorTypeR\x04type\x12\x10\n" +
-	"\x03url\x18\x06 \x01(\tR\x03url\"\xe1\x02\n" +
+	"\x03url\x18\x06 \x01(\tR\x03url\"\xf1\x02\n" +
 	"\x12ResourceDescriptor\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n" +
 	"\x03uri\x18\x02 \x01(\tR\x03uri\x12I\n" +
@@ -2320,7 +2333,8 @@ const file_carabiner_core_v1_events_proto_rawDesc = "" +
 	"\x11download_location\x18\x05 \x01(\tR\x10downloadLocation\x12\x1d\n" +
 	"\n" +
 	"media_type\x18\x06 \x01(\tR\tmediaType\x129\n" +
-	"\vannotations\x18\a \x01(\v2\x17.google.protobuf.StructR\vannotations\x1a9\n" +
+	"\vannotations\x18\a \x01(\v2\x17.google.protobuf.StructR\vannotations\x12\x0e\n" +
+	"\x02id\x18\b \x01(\tR\x02id\x1a9\n" +
 	"\vDigestEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\x80\x02\n" +

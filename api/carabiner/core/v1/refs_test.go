@@ -34,7 +34,7 @@ func TestCanonicalAndParseRoundTrip(t *testing.T) {
 		{NewObjectRef(SubjectType_SUBJECT_TYPE_REVISION, "2222"), "revision:2222"},
 		{NewObjectRef(SubjectType_SUBJECT_TYPE_TAG, "v0.2"), "tag:v0.2"},
 		{NewObjectRef(SubjectType_SUBJECT_TYPE_PIPELINE_RUN, "1234"), runRef},
-		{NewObjectRef(SubjectType_SUBJECT_TYPE_REPOSITORY, "repository://github.com/acme/widgets"), "repository:repository://github.com/acme/widgets"},
+		{NewObjectRef(SubjectType_SUBJECT_TYPE_REPOSITORY, widgetsRepoURI), "repository:repository://github.com/acme/widgets"},
 		{NewObjectRef(SubjectType_SUBJECT_TYPE_CHANGE, "42"), "change:42"},
 	}
 	for _, c := range cases {
@@ -66,13 +66,13 @@ func TestParseObjectRefRejectsGarbage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseObjectRef error: %v", err)
 	}
-	if r.GetId() != "repository://github.com/acme/widgets" {
+	if r.GetId() != widgetsRepoURI {
 		t.Errorf("id = %q, want the full URI", r.GetId())
 	}
 }
 
 func TestEventObjectRefs(t *testing.T) {
-	repoURI := "repository://github.com/acme/widgets"
+	repoURI := widgetsRepoURI
 	ev := &Event{
 		Type:    &EventType{Subject: SubjectType_SUBJECT_TYPE_PIPELINE_RUN, Predicate: Predicate_PREDICATE_FINISHED},
 		Subject: &Subject{Id: "1234", Source: repoURI},
