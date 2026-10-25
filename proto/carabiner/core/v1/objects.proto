@@ -35,10 +35,15 @@ enum PipelineState {
 }
 
 // A system abstracts a system capable of handling one or more stages
-// of the SDLC. A CI/CD system, for example, can handle builds
+// of the SDLC. A CI/CD system, for example, can handle builds.
+//
+// A system is registered to an organization, and its identity is
+// <organization handle>/<name> (carabiner/github): both segments are
+// immutable, so the key is the human form too and needs no translation
+// (platform/docs/identifiers, 2026-10-25).
 message System {
 	string ID = 1 [
-		(buf.validate.field).string = {uuid: true}
+		(buf.validate.field).string = {pattern: "^[-_a-zA-Z0-9]+/[-_a-zA-Z0-9]+$"}
 	];
 	string organization = 2;
 	string name = 3;

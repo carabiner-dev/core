@@ -140,7 +140,12 @@ func (PipelineState) EnumDescriptor() ([]byte, []int) {
 }
 
 // A system abstracts a system capable of handling one or more stages
-// of the SDLC. A CI/CD system, for example, can handle builds
+// of the SDLC. A CI/CD system, for example, can handle builds.
+//
+// A system is registered to an organization, and its identity is
+// <organization handle>/<name> (carabiner/github): both segments are
+// immutable, so the key is the human form too and needs no translation
+// (platform/docs/identifiers, 2026-10-25).
 type System struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ID            string                 `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
@@ -744,9 +749,9 @@ var File_carabiner_core_v1_objects_proto protoreflect.FileDescriptor
 
 const file_carabiner_core_v1_objects_proto_rawDesc = "" +
 	"\n" +
-	"\x1fcarabiner/core/v1/objects.proto\x12\x11carabiner.core.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bbuf/validate/validate.proto\"\x85\x01\n" +
-	"\x06System\x12\x18\n" +
-	"\x02ID\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02ID\x12\"\n" +
+	"\x1fcarabiner/core/v1/objects.proto\x12\x11carabiner.core.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bbuf/validate/validate.proto\"\xa3\x01\n" +
+	"\x06System\x126\n" +
+	"\x02ID\x18\x01 \x01(\tB&\xbaH#r!2\x1f^[-_a-zA-Z0-9]+/[-_a-zA-Z0-9]+$R\x02ID\x12\"\n" +
 	"\forganization\x18\x02 \x01(\tR\forganization\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12)\n" +
 	"\x04type\x18\x04 \x01(\tB\x15\xbaH\x12r\x10R\x06githubR\x06gitlabR\x04type\"\xe4\x03\n" +
