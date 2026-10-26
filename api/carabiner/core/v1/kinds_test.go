@@ -89,6 +89,59 @@ const (
 	widgetsRepoID  = "1b2023ec-394f-4214-b516-df7724442e0d"
 )
 
+func TestArtifactKinds(t *testing.T) {
+	published, ok := LookupEventKind(&EventType{Subject: SubjectType_SUBJECT_TYPE_ARTIFACT, Predicate: Predicate_PREDICATE_PUBLISHED})
+	if !ok {
+		t.Fatal("artifact.published is not a kind")
+	}
+	for _, s := range []SubjectKind{
+		{Type: SubjectType_SUBJECT_TYPE_ARTIFACT},
+		{Type: SubjectType_SUBJECT_TYPE_REPOSITORY, Role: SubjectRole_SUBJECT_ROLE_IN_REPOSITORY},
+		{Type: SubjectType_SUBJECT_TYPE_REVISION, Role: SubjectRole_SUBJECT_ROLE_BUILT_FROM},
+		{Type: SubjectType_SUBJECT_TYPE_TAG, Role: SubjectRole_SUBJECT_ROLE_RELEASED_AS},
+	} {
+		if !published.Yields(s) {
+			t.Errorf("artifact.published does not yield %v", s)
+		}
+	}
+	if published.Yields(SubjectKind{Type: SubjectType_SUBJECT_TYPE_PIPELINE_RUN, Role: SubjectRole_SUBJECT_ROLE_PRODUCED_BY}) {
+		t.Error("artifact.published yields the producing run; only packaged does")
+	}
+	packaged, _ := LookupEventKind(&EventType{Subject: SubjectType_SUBJECT_TYPE_ARTIFACT, Predicate: Predicate_PREDICATE_PACKAGED})
+	if !packaged.Yields(SubjectKind{Type: SubjectType_SUBJECT_TYPE_PIPELINE_RUN, Role: SubjectRole_SUBJECT_ROLE_PRODUCED_BY}) {
+		t.Error("artifact.packaged does not yield the producing run")
+	}
+
+	// The names render as CDEvents spells them.
+	if got := SubjectTypeName(SubjectType_SUBJECT_TYPE_ARTIFACT) + "." + PredicateName(Predicate_PREDICATE_PUBLISHED); got != "artifact.published" {
+		t.Errorf("name = %q", got)
+	}
+	if got := SubjectRoleName(SubjectRole_SUBJECT_ROLE_RELEASED_AS); got != "releasedAs" {
+		t.Errorf("role name = %q", got)
+	}
+
+	// An artifact carries its digest, or it is refused.
+	event := &Event{
+		Type:    published.Type(),
+		Subject: &Subject{Id: "pkg:github/acme/widgets@v1.0.0#widgets-linux-amd64", Data: &Subject_Artifact{Artifact: &Artifact{Name: "widgets-linux-amd64", Kind: "binary"}}},
+		Related: []*RelatedSubject{
+			{Role: SubjectRole_SUBJECT_ROLE_IN_REPOSITORY, Type: SubjectType_SUBJECT_TYPE_REPOSITORY, Descriptor_: &ResourceDescriptor{Id: widgetsRepoID, Uri: widgetsRepoURI}},
+			{Role: SubjectRole_SUBJECT_ROLE_RELEASED_AS, Type: SubjectType_SUBJECT_TYPE_TAG, Descriptor_: &ResourceDescriptor{Name: "v1.0.0"}},
+		},
+	}
+	var missing *MissingDigestError
+	if err := ValidateEvent(event); !errors.As(err, &missing) || missing.Error() != "event kind artifact.published: the artifact subject has no digest" {
+		t.Errorf("artifact without digest: %v", err)
+	}
+	event.GetSubject().GetArtifact().Digest = map[string]string{"sha256": "0123"}
+	if err := ValidateEvent(event); err != nil {
+		t.Errorf("a well-formed artifact.published is refused: %v", err)
+	}
+	if got := event.ObjectRef().Canonical(); got != "artifact:pkg:github/acme/widgets@v1.0.0#widgets-linux-amd64" {
+		t.Errorf("ref = %q", got)
+	}
+}
+
 func TestValidateEvent(t *testing.T) {
 	push := &Event{
 		Type: &EventType{Subject: SubjectType_SUBJECT_TYPE_REVISION, Predicate: Predicate_PREDICATE_CREATED},

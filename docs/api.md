@@ -258,7 +258,7 @@ created, queued, started, finished, merged, …). An event carries one
 principal `Subject` of that type with its full data, and `related` subjects:
 coordinate-only descriptors of the objects reachable from it, each in a
 `SubjectRole` (`inRepository`, `onBranch`, `head`, `base`, `tagged`,
-`merge`, …). An attester chooses what to sign over by selecting from the
+`merge`, `builtFrom`, `producedBy`, `releasedAs`, …). An attester chooses what to sign over by selecting from the
 principal and the related subjects.
 
 ### Event kinds
@@ -279,6 +279,18 @@ role).
 | pipelineRun.queued / started / finished | inRepository → repository, head → revision |
 | change.created / updated / reviewed / abandoned | inRepository → repository, head → revision, base → revision, sourceBranch → branch, targetBranch → branch |
 | change.merged | the change kinds' subjects, plus merge → revision |
+| artifact.packaged | inRepository → repository, builtFrom → revision, producedBy → pipelineRun |
+| artifact.published | inRepository → repository, builtFrom → revision, releasedAs → tag |
+
+An **artifact** (the CDEvents subject; `Artifact` in the proto) is a product
+of a repository: a binary, a package, an image, known by its content
+`digest` (`sha256` at least, required) and identified by its purl, which is
+the subject's `id`. It is *packaged* when a run produces it and *published*
+when it is available somewhere: a release asset (one event per asset, the
+tag riding along as `releasedAs`), a package or an image in a registry, or
+whatever Secure Publishing moved. CDEvents has no release subject and
+neither does core: the tag groups what a release published. The platform's
+model of artifacts is `docs/artifacts` in the platform repo.
 
 A related subject's `ResourceDescriptor` names the object for humans
 (`name`, `uri`: `repository://github.com/<owner>/<repo>` for a repository)
@@ -293,9 +305,9 @@ Go helpers: `EventKinds()` lists the catalog in a stable order;
 `LookupEventKind(type)` finds a kind; `kind.Subjects()` lists what it yields
 as `SubjectKind{Type, Role}` values and `kind.Yields(subject)` checks one;
 `ValidateEvent(event)` refuses an event whose type is not a kind, whose
-related subjects its kind does not list, or whose related repository has no
-`id` (`UnknownEventKindError`, `UnexpectedSubjectError`,
-`MissingIdentityError`).
+related subjects its kind does not list, whose related repository has no
+`id`, or whose artifact subject has no digest (`UnknownEventKindError`,
+`UnexpectedSubjectError`, `MissingIdentityError`, `MissingDigestError`).
 
 ### PipelineRun
 

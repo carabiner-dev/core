@@ -50,6 +50,12 @@ var (
 	}
 	// A run relates to the repository it ran in and the revision it ran at.
 	runRelated = []RelatedKind{inRepository, headRevision}
+	// An artifact relates to the repository whose product it is and the
+	// revision it was built from; packaged, to the run that produced it;
+	// published, to the tag that released it, when one did.
+	builtFrom         = RelatedKind{Role: SubjectRole_SUBJECT_ROLE_BUILT_FROM, Type: SubjectType_SUBJECT_TYPE_REVISION}
+	artifactPackaged  = []RelatedKind{inRepository, builtFrom, {Role: SubjectRole_SUBJECT_ROLE_PRODUCED_BY, Type: SubjectType_SUBJECT_TYPE_PIPELINE_RUN}}
+	artifactPublished = []RelatedKind{inRepository, builtFrom, {Role: SubjectRole_SUBJECT_ROLE_RELEASED_AS, Type: SubjectType_SUBJECT_TYPE_TAG}}
 )
 
 // eventKinds is the catalog: every kind of event the platform defines, in a
@@ -74,6 +80,9 @@ var eventKinds = []EventKind{
 		RelatedKind{Role: SubjectRole_SUBJECT_ROLE_MERGE, Type: SubjectType_SUBJECT_TYPE_REVISION},
 	)},
 	{Subject: SubjectType_SUBJECT_TYPE_CHANGE, Predicate: Predicate_PREDICATE_ABANDONED, Related: changeRelated},
+	// An artifact's lifecycle: produced by a run, then available somewhere.
+	{Subject: SubjectType_SUBJECT_TYPE_ARTIFACT, Predicate: Predicate_PREDICATE_PACKAGED, Related: artifactPackaged},
+	{Subject: SubjectType_SUBJECT_TYPE_ARTIFACT, Predicate: Predicate_PREDICATE_PUBLISHED, Related: artifactPublished},
 }
 
 // EventKinds returns the catalog of event kinds, in its stable order. The
@@ -130,11 +139,16 @@ func (k EventKind) Yields(s SubjectKind) bool {
 // does not require every listed related subject to be present, since a
 // producer may lack one (a run without a head revision). A related
 // repository must carry its platform identity (descriptor id): consumers
-// route and authorize by it, never by the repository's name.
+// route and authorize by it, never by the repository's name. An artifact
+// subject must carry its digest: it is the artifact's identity, what
+// evidence is looked up by and what sightings are deduped on.
 func ValidateEvent(e *Event) error {
 	kind, ok := LookupEventKind(e.GetType())
 	if !ok {
 		return &UnknownEventKindError{Type: e.GetType()}
+	}
+	if kind.Subject == SubjectType_SUBJECT_TYPE_ARTIFACT && e.GetSubject() != nil && len(e.GetSubject().GetArtifact().GetDigest()) == 0 {
+		return &MissingDigestError{Kind: kind}
 	}
 	for _, rel := range e.GetRelated() {
 		s := SubjectKind{Type: rel.GetType(), Role: rel.GetRole()}
@@ -158,6 +172,16 @@ type MissingIdentityError struct {
 func (e *MissingIdentityError) Error() string {
 	return "event kind " + SubjectTypeName(e.Kind.Subject) + "." + PredicateName(e.Kind.Predicate) +
 		": the " + SubjectTypeName(e.Subject.Type) + " subject in role " + SubjectRoleName(e.Subject.Role) + " has no platform identity (descriptor id)"
+}
+
+// MissingDigestError says an artifact subject came without its content
+// digest.
+type MissingDigestError struct {
+	Kind EventKind
+}
+
+func (e *MissingDigestError) Error() string {
+	return "event kind " + SubjectTypeName(e.Kind.Subject) + "." + PredicateName(e.Kind.Predicate) + ": the artifact subject has no digest"
 }
 
 // UnknownEventKindError says an event type is not a kind the platform

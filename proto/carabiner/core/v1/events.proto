@@ -106,6 +106,10 @@ message Subject {
 
 		// tag is a tag/release ref (carabiner extension).
 		Tag tag = 17;
+
+		// artifact is a product of a repository: a binary, a package, an image
+		// (CDEvents artifact). Its id is the artifact's purl.
+		Artifact artifact = 18;
 	}
 }
 
@@ -324,6 +328,49 @@ message Tag {
 	string message = 11;
 }
 
+// Artifact is a product of a repository: bytes with a content digest that a
+// transformation of the repository's source (a pipeline run, usually) made and
+// that were put somewhere for others to use: a release asset, a package in a
+// registry, an image in an OCI registry. It is the CDEvents artifact subject;
+// the subject's id is the artifact's purl (pkg:oci/..., pkg:npm/...,
+// pkg:github/<owner>/<repo>@<tag>#<asset>). An artifact is packaged (a run
+// produced it) and published (it is available somewhere); the repository, the
+// run, the revision it was built from and the tag that released it are carried
+// as related subjects. The platform tracks it under its repository, deduped by
+// its digest (docs/artifacts in the platform repo).
+message Artifact {
+	// name is what the artifact is called where it was published: an asset
+	// file name, an image reference, a package name and version.
+	string name = 1;
+
+	// sbom_uri is where the artifact's SBOM is, when the producer published
+	// one beside it (CDEvents artifact.packaged sbom).
+	string sbom_uri = 2;
+
+	// user is who published it in the source system, when known (CDEvents
+	// artifact.published user).
+	string user = 3;
+
+	// digest is the artifact's content digest keyed by algorithm; "sha256" at
+	// least. It is the artifact's identity across sightings: the same bytes
+	// published twice are one artifact. Required.
+	map<string, string> digest = 10;
+
+	// kind is what the artifact is: container-image, binary, package, archive
+	// or file.
+	string kind = 11;
+
+	// media_type is the artifact's media type, when known.
+	string media_type = 12;
+
+	// size is the artifact's size in bytes, when known.
+	int64 size = 13;
+
+	// download_location is where the bytes are: the asset URL, the registry
+	// manifest URL, the package tarball.
+	string download_location = 14;
+}
+
 // RelatedSubject is one node in the origin's neighborhood: a subject reachable
 // from the principal subject, carried as a coordinate-only descriptor so an
 // attester can select it and promote it to an attestation subject. It carries no
@@ -457,6 +504,9 @@ enum SubjectType {
 	SUBJECT_TYPE_REVISION = 7;
 	// A tag/release ref (carabiner extension).
 	SUBJECT_TYPE_TAG = 8;
+	// A product of a repository: a binary, a package, an image (CDEvents
+	// artifact).
+	SUBJECT_TYPE_ARTIFACT = 9;
 }
 
 // Predicate is the lifecycle verb of an event. Which predicates are valid
@@ -485,6 +535,12 @@ enum Predicate {
 	PREDICATE_ABANDONED = 9;
 	// The subject was updated.
 	PREDICATE_UPDATED = 10;
+	// The subject (an artifact) was produced by a run (CDEvents
+	// artifact.packaged).
+	PREDICATE_PACKAGED = 11;
+	// The subject (an artifact) was made available somewhere (CDEvents
+	// artifact.published).
+	PREDICATE_PUBLISHED = 12;
 }
 
 // RunStatus is the lifecycle state of a run. Its values are the CDEvents run
@@ -575,6 +631,14 @@ enum SubjectRole {
 	SUBJECT_ROLE_MERGE = 8;
 	// The related subject is the revision a tag points to.
 	SUBJECT_ROLE_TAGGED = 9;
+	// The related subject is the pipeline run that produced the origin (an
+	// artifact).
+	SUBJECT_ROLE_PRODUCED_BY = 10;
+	// The related subject is the revision the origin (an artifact) was built
+	// from (CDEvents artifact change).
+	SUBJECT_ROLE_BUILT_FROM = 11;
+	// The related subject is the tag that released the origin (an artifact).
+	SUBJECT_ROLE_RELEASED_AS = 12;
 }
 
 // ChangeState is the lifecycle state of a change (pull/merge request).
