@@ -37,6 +37,10 @@ func (a *TargetAnchor) Validate() error {
 		if at.CodebaseId == "" {
 			return fmt.Errorf("%w: empty codebase id", ErrInvalidTargetAnchor)
 		}
+	case *TargetAnchor_ArtifactId:
+		if at.ArtifactId == "" {
+			return fmt.Errorf("%w: empty artifact id", ErrInvalidTargetAnchor)
+		}
 	case nil:
 		return fmt.Errorf("%w: nothing set", ErrInvalidTargetAnchor)
 	default:
@@ -47,7 +51,8 @@ func (a *TargetAnchor) Validate() error {
 
 // Contains reports whether the member is under the anchor: every member is
 // under the project, a member under the folders on its path, a repository
-// and its codebases under the repository, a codebase under itself.
+// and its codebases and artifacts under the repository, a codebase or an
+// artifact under itself.
 func (a *TargetAnchor) Contains(m *Member) bool {
 	if a.Validate() != nil {
 		return false
@@ -61,19 +66,21 @@ func (a *TargetAnchor) Contains(m *Member) bool {
 		switch m.Kind {
 		case MemberKind_MEMBER_KIND_REPOSITORY:
 			return m.ID == at.RepositoryId
-		case MemberKind_MEMBER_KIND_CODEBASE:
+		case MemberKind_MEMBER_KIND_CODEBASE, MemberKind_MEMBER_KIND_ARTIFACT:
 			return m.RepositoryID == at.RepositoryId
 		case MemberKind_MEMBER_KIND_UNSPECIFIED:
 			return false
 		}
 	case *TargetAnchor_CodebaseId:
 		return m.Kind == MemberKind_MEMBER_KIND_CODEBASE && m.ID == at.CodebaseId
+	case *TargetAnchor_ArtifactId:
+		return m.Kind == MemberKind_MEMBER_KIND_ARTIFACT && m.ID == at.ArtifactId
 	}
 	return false
 }
 
-// Key renders the anchor: "project", "folder:<path>", "repository:<id>"
-// or "codebase:<id>"; empty for an invalid one.
+// Key renders the anchor: "project", "folder:<path>", "repository:<id>",
+// "codebase:<id>" or "artifact:<id>"; empty for an invalid one.
 func (a *TargetAnchor) Key() string {
 	switch at := a.GetAt().(type) {
 	case *TargetAnchor_Project:
@@ -84,13 +91,15 @@ func (a *TargetAnchor) Key() string {
 		return "repository:" + at.RepositoryId
 	case *TargetAnchor_CodebaseId:
 		return "codebase:" + at.CodebaseId
+	case *TargetAnchor_ArtifactId:
+		return "artifact:" + at.ArtifactId
 	}
 	return ""
 }
 
 // distance ranks how near an anchor that contains the member is to it:
-// the codebase itself, its repository, then the folders from the deepest
-// up, then the project. Smaller is nearer.
+// the codebase or artifact itself, its repository, then the folders from
+// the deepest up, then the project. Smaller is nearer.
 func (a *TargetAnchor) distance(m *Member) int {
 	const (
 		self       = 0
@@ -99,7 +108,7 @@ func (a *TargetAnchor) distance(m *Member) int {
 		project    = 1 << 30
 	)
 	switch at := a.GetAt().(type) {
-	case *TargetAnchor_CodebaseId:
+	case *TargetAnchor_CodebaseId, *TargetAnchor_ArtifactId:
 		return self
 	case *TargetAnchor_RepositoryId:
 		if m.Kind == MemberKind_MEMBER_KIND_REPOSITORY {

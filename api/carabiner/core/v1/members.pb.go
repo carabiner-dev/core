@@ -105,6 +105,10 @@ const (
 	MemberKind_MEMBER_KIND_REPOSITORY MemberKind = 1
 	// A codebase inside a repository.
 	MemberKind_MEMBER_KIND_CODEBASE MemberKind = 2
+	// An artifact a repository published (docs/artifacts in the platform
+	// repo). Never a project member on its own: a subject a target reaches
+	// through its repository, or by naming it.
+	MemberKind_MEMBER_KIND_ARTIFACT MemberKind = 3
 )
 
 // Enum value maps for MemberKind.
@@ -113,11 +117,13 @@ var (
 		0: "MEMBER_KIND_UNSPECIFIED",
 		1: "MEMBER_KIND_REPOSITORY",
 		2: "MEMBER_KIND_CODEBASE",
+		3: "MEMBER_KIND_ARTIFACT",
 	}
 	MemberKind_value = map[string]int32{
 		"MEMBER_KIND_UNSPECIFIED": 0,
 		"MEMBER_KIND_REPOSITORY":  1,
 		"MEMBER_KIND_CODEBASE":    2,
+		"MEMBER_KIND_ARTIFACT":    3,
 	}
 )
 
@@ -358,6 +364,7 @@ type TargetAnchor struct {
 	//	*TargetAnchor_FolderPath
 	//	*TargetAnchor_RepositoryId
 	//	*TargetAnchor_CodebaseId
+	//	*TargetAnchor_ArtifactId
 	At            isTargetAnchor_At `protobuf_oneof:"at"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -436,6 +443,15 @@ func (x *TargetAnchor) GetCodebaseId() string {
 	return ""
 }
 
+func (x *TargetAnchor) GetArtifactId() string {
+	if x != nil {
+		if x, ok := x.At.(*TargetAnchor_ArtifactId); ok {
+			return x.ArtifactId
+		}
+	}
+	return ""
+}
+
 type isTargetAnchor_At interface {
 	isTargetAnchor_At()
 }
@@ -461,6 +477,12 @@ type TargetAnchor_CodebaseId struct {
 	CodebaseId string `protobuf:"bytes,4,opt,name=codebase_id,json=codebaseId,proto3,oneof"`
 }
 
+type TargetAnchor_ArtifactId struct {
+	// artifact_id anchors on one artifact a repository published: an
+	// artifact is already out, so the target asks about it as it is.
+	ArtifactId string `protobuf:"bytes,5,opt,name=artifact_id,json=artifactId,proto3,oneof"`
+}
+
 func (*TargetAnchor_Project) isTargetAnchor_At() {}
 
 func (*TargetAnchor_FolderPath) isTargetAnchor_At() {}
@@ -468,6 +490,8 @@ func (*TargetAnchor_FolderPath) isTargetAnchor_At() {}
 func (*TargetAnchor_RepositoryId) isTargetAnchor_At() {}
 
 func (*TargetAnchor_CodebaseId) isTargetAnchor_At() {}
+
+func (*TargetAnchor_ArtifactId) isTargetAnchor_At() {}
 
 var File_carabiner_core_v1_members_proto protoreflect.FileDescriptor
 
@@ -486,14 +510,16 @@ const file_carabiner_core_v1_members_proto_rawDesc = "" +
 	"\x12relationship_types\x18\x02 \x03(\tR\x11relationshipTypes\x12,\n" +
 	"\x12folder_path_prefix\x18\x03 \x01(\tR\x10folderPathPrefix\x123\n" +
 	"\x05kinds\x18\x04 \x03(\x0e2\x1d.carabiner.core.v1.MemberKindR\x05kinds\x128\n" +
-	"\x06labels\x18\x05 \x01(\v2 .carabiner.core.v1.LabelSelectorR\x06labels\"\x9d\x01\n" +
+	"\x06labels\x18\x05 \x01(\v2 .carabiner.core.v1.LabelSelectorR\x06labels\"\xc0\x01\n" +
 	"\fTargetAnchor\x12\x1a\n" +
 	"\aproject\x18\x01 \x01(\bH\x00R\aproject\x12!\n" +
 	"\vfolder_path\x18\x02 \x01(\tH\x00R\n" +
 	"folderPath\x12%\n" +
 	"\rrepository_id\x18\x03 \x01(\tH\x00R\frepositoryId\x12!\n" +
 	"\vcodebase_id\x18\x04 \x01(\tH\x00R\n" +
-	"codebaseIdB\x04\n" +
+	"codebaseId\x12!\n" +
+	"\vartifact_id\x18\x05 \x01(\tH\x00R\n" +
+	"artifactIdB\x04\n" +
 	"\x02at*\xad\x01\n" +
 	"\n" +
 	"MemberRole\x12\x1b\n" +
@@ -502,12 +528,13 @@ const file_carabiner_core_v1_members_proto_rawDesc = "" +
 	"\x16MEMBER_ROLE_DEPENDENCY\x10\x02\x12\x1a\n" +
 	"\x16MEMBER_ROLE_SUPPORTING\x10\x03\x12\x19\n" +
 	"\x15MEMBER_ROLE_UNRELATED\x10\x04\x12\x19\n" +
-	"\x15MEMBER_ROLE_DEPENDENT\x10\x05*_\n" +
+	"\x15MEMBER_ROLE_DEPENDENT\x10\x05*y\n" +
 	"\n" +
 	"MemberKind\x12\x1b\n" +
 	"\x17MEMBER_KIND_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16MEMBER_KIND_REPOSITORY\x10\x01\x12\x18\n" +
-	"\x14MEMBER_KIND_CODEBASE\x10\x02B\xc5\x01\n" +
+	"\x14MEMBER_KIND_CODEBASE\x10\x02\x12\x18\n" +
+	"\x14MEMBER_KIND_ARTIFACT\x10\x03B\xc5\x01\n" +
 	"\x15com.carabiner.core.v1B\fMembersProtoP\x01Z8github.com/carabiner-dev/core/api/carabiner/core/v1;core\xa2\x02\x03CCX\xaa\x02\x11Carabiner.Core.V1\xca\x02\x11Carabiner\\Core\\V1\xe2\x02\x1dCarabiner\\Core\\V1\\GPBMetadata\xea\x02\x13Carabiner::Core::V1b\x06proto3"
 
 var (
@@ -559,6 +586,7 @@ func file_carabiner_core_v1_members_proto_init() {
 		(*TargetAnchor_FolderPath)(nil),
 		(*TargetAnchor_RepositoryId)(nil),
 		(*TargetAnchor_CodebaseId)(nil),
+		(*TargetAnchor_ArtifactId)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

@@ -203,13 +203,15 @@ effective labels).
 
 A `TargetAnchor` is where a compliance target is set: the `project`, a
 `folder_path` (it and everything below), a `repository_id` (it and its
-codebases) or a `codebase_id`. `Validate`, `Contains(*Member)` and `Key` are
-its helpers. A target (the `Target` interface: anchor, optional
+codebases and artifacts), a `codebase_id` or an `artifact_id` (one artifact
+the repository published, `MemberKind` `ARTIFACT` when resolved: already
+out, so the target asks about it as it is). `Validate`, `Contains(*Member)`
+and `Key` are its helpers. A target (the `Target` interface: anchor, optional
 `MemberSelector`, framework id, `replaces`) reaches a member when its anchor
 contains it and its selector, if set, matches it (`TargetReaches`).
 `EffectiveTargets(member, targets)` resolves inheritance: walking the
-member's anchors from the nearest out (codebase, repository, folders from
-the deepest up, project), the targets reaching it at an anchor apply unless
+member's anchors from the nearest out (codebase or artifact, repository,
+folders from the deepest up, project), the targets reaching it at an anchor apply unless
 their framework is closed; after the anchor their frameworks close, and so
 do the ones they list in `replaces` (`ReplacesAll`, `"*"`, closes everything
 and ends the walk). Every target at one anchor applies. Targets themselves

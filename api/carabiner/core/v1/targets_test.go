@@ -50,6 +50,10 @@ func codebaseAnchor(id string) *TargetAnchor {
 	return &TargetAnchor{At: &TargetAnchor_CodebaseId{CodebaseId: id}}
 }
 
+func artifactAnchor(id string) *TargetAnchor {
+	return &TargetAnchor{At: &TargetAnchor_ArtifactId{ArtifactId: id}}
+}
+
 func names(ts []*target) []string {
 	out := make([]string, 0, len(ts))
 	for _, t := range ts {
@@ -62,10 +66,13 @@ var (
 	mainRepo = &Member{ID: repoMain, Kind: MemberKind_MEMBER_KIND_REPOSITORY, Role: MemberRole_MEMBER_ROLE_ROOT, FolderPath: "/"}
 	libRepo  = &Member{ID: repoLib, Kind: MemberKind_MEMBER_KIND_REPOSITORY, Role: MemberRole_MEMBER_ROLE_DEPENDENCY, FolderPath: "/libs/go"}
 	webCode  = &Member{ID: cbWeb, Kind: MemberKind_MEMBER_KIND_CODEBASE, RepositoryID: repoMain, Role: MemberRole_MEMBER_ROLE_SUPPORTING, FolderPath: "/"}
+	// An artifact the main repository published: reached through the
+	// repository, or named.
+	mainImage = &Member{ID: "art-image", Kind: MemberKind_MEMBER_KIND_ARTIFACT, RepositoryID: repoMain, Role: MemberRole_MEMBER_ROLE_ROOT, FolderPath: "/"}
 )
 
 func TestTargetAnchorValidateAndContains(t *testing.T) {
-	for _, bad := range []*TargetAnchor{nil, {}, folderAnchor("build"), repositoryAnchor(""), codebaseAnchor(""), {At: &TargetAnchor_Project{}}} {
+	for _, bad := range []*TargetAnchor{nil, {}, folderAnchor("build"), repositoryAnchor(""), codebaseAnchor(""), artifactAnchor(""), {At: &TargetAnchor_Project{}}} {
 		if err := bad.Validate(); !errors.Is(err, ErrInvalidTargetAnchor) {
 			t.Errorf("Validate(%v) = %v, want ErrInvalidTargetAnchor", bad, err)
 		}
@@ -88,6 +95,12 @@ func TestTargetAnchorValidateAndContains(t *testing.T) {
 		{repositoryAnchor(repoMain), libRepo, false},
 		{codebaseAnchor(cbWeb), webCode, true},
 		{codebaseAnchor(cbWeb), mainRepo, false},
+		{repositoryAnchor(repoMain), mainImage, true},
+		{repositoryAnchor(repoLib), mainImage, false},
+		{codebaseAnchor(cbWeb), mainImage, false},
+		{artifactAnchor("art-image"), mainImage, true},
+		{artifactAnchor("art-image"), mainRepo, false},
+		{projectAnchor(), mainImage, true},
 	}
 	for _, c := range cases {
 		if got := c.anchor.Contains(c.member); got != c.want {
@@ -96,6 +109,17 @@ func TestTargetAnchorValidateAndContains(t *testing.T) {
 	}
 	if k := folderAnchor("/libs").Key(); k != "folder:/libs" {
 		t.Errorf("Key = %q", k)
+	}
+	if k := artifactAnchor("art-image").Key(); k != "artifact:art-image" {
+		t.Errorf("Key = %q", k)
+	}
+	// An artifact's own target is nearer than its repository's, which is
+	// nearer than the project's.
+	own := &target{name: "own", anchor: artifactAnchor("art-image"), framework: "cra"}
+	repo := &target{name: "repo", anchor: repositoryAnchor(repoMain), framework: "cra"}
+	proj := &target{name: "proj", anchor: projectAnchor(), framework: "osps"}
+	if got := names(EffectiveTargets(mainImage, []*target{proj, repo, own})); !slices.Equal(got, []string{"own", "proj"}) {
+		t.Errorf("effective targets for the artifact = %v, want [own proj]", got)
 	}
 }
 

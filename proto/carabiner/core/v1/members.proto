@@ -65,6 +65,10 @@ enum MemberKind {
 	MEMBER_KIND_REPOSITORY = 1;
 	// A codebase inside a repository.
 	MEMBER_KIND_CODEBASE = 2;
+	// An artifact a repository published (docs/artifacts in the platform
+	// repo). Never a project member on its own: a subject a target reaches
+	// through its repository, or by naming it.
+	MEMBER_KIND_ARTIFACT = 3;
 }
 
 // MemberSelector selects part of a project: the members every set field
@@ -109,5 +113,8 @@ message TargetAnchor {
 		string repository_id = 3;
 		// codebase_id anchors on one codebase.
 		string codebase_id = 4;
+		// artifact_id anchors on one artifact a repository published: an
+		// artifact is already out, so the target asks about it as it is.
+		string artifact_id = 5;
 	}
 }
