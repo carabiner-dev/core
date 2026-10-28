@@ -52,10 +52,16 @@ var (
 	runRelated = []RelatedKind{inRepository, headRevision}
 	// An artifact relates to the repository whose product it is and the
 	// revision it was built from; packaged, to the run that produced it;
-	// published, to the tag that released it, when one did.
+	// published, to the tag that released it and the release it was
+	// published under, when one did.
 	builtFrom         = RelatedKind{Role: SubjectRole_SUBJECT_ROLE_BUILT_FROM, Type: SubjectType_SUBJECT_TYPE_REVISION}
+	releasedAs        = RelatedKind{Role: SubjectRole_SUBJECT_ROLE_RELEASED_AS, Type: SubjectType_SUBJECT_TYPE_TAG}
 	artifactPackaged  = []RelatedKind{inRepository, builtFrom, {Role: SubjectRole_SUBJECT_ROLE_PRODUCED_BY, Type: SubjectType_SUBJECT_TYPE_PIPELINE_RUN}}
-	artifactPublished = []RelatedKind{inRepository, builtFrom, {Role: SubjectRole_SUBJECT_ROLE_RELEASED_AS, Type: SubjectType_SUBJECT_TYPE_TAG}}
+	artifactPublished = []RelatedKind{inRepository, builtFrom, releasedAs, {Role: SubjectRole_SUBJECT_ROLE_IN_RELEASE, Type: SubjectType_SUBJECT_TYPE_RELEASE}}
+	// A release relates to the repository it publishes from, the tag it is
+	// cut at and the revision that tag points to; its artifacts come as
+	// their own published events, each naming the release.
+	releaseCreated = []RelatedKind{inRepository, releasedAs, {Role: SubjectRole_SUBJECT_ROLE_TAGGED, Type: SubjectType_SUBJECT_TYPE_REVISION}}
 )
 
 // eventKinds is the catalog: every kind of event the platform defines, in a
@@ -68,6 +74,8 @@ var eventKinds = []EventKind{
 		inRepository,
 		{Role: SubjectRole_SUBJECT_ROLE_TAGGED, Type: SubjectType_SUBJECT_TYPE_REVISION},
 	}},
+	// A release cut at a tag (carabiner extension).
+	{Subject: SubjectType_SUBJECT_TYPE_RELEASE, Predicate: Predicate_PREDICATE_CREATED, Related: releaseCreated},
 	// A pipeline run's lifecycle.
 	{Subject: SubjectType_SUBJECT_TYPE_PIPELINE_RUN, Predicate: Predicate_PREDICATE_QUEUED, Related: runRelated},
 	{Subject: SubjectType_SUBJECT_TYPE_PIPELINE_RUN, Predicate: Predicate_PREDICATE_STARTED, Related: runRelated},

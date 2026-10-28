@@ -260,7 +260,7 @@ created, queued, started, finished, merged, …). An event carries one
 principal `Subject` of that type with its full data, and `related` subjects:
 coordinate-only descriptors of the objects reachable from it, each in a
 `SubjectRole` (`inRepository`, `onBranch`, `head`, `base`, `tagged`,
-`merge`, `builtFrom`, `producedBy`, `releasedAs`, …). An attester chooses what to sign over by selecting from the
+`merge`, `builtFrom`, `producedBy`, `releasedAs`, `inRelease`, …). An attester chooses what to sign over by selecting from the
 principal and the related subjects.
 
 ### Event kinds
@@ -278,11 +278,12 @@ role).
 |------|--------------------------------|
 | revision.created | inRepository → repository, onBranch → branch |
 | tag.created | inRepository → repository, tagged → revision |
+| release.created | inRepository → repository, releasedAs → tag, tagged → revision |
 | pipelineRun.queued / started / finished | inRepository → repository, head → revision |
 | change.created / updated / reviewed / abandoned | inRepository → repository, head → revision, base → revision, sourceBranch → branch, targetBranch → branch |
 | change.merged | the change kinds' subjects, plus merge → revision |
 | artifact.packaged | inRepository → repository, builtFrom → revision, producedBy → pipelineRun |
-| artifact.published | inRepository → repository, builtFrom → revision, releasedAs → tag |
+| artifact.published | inRepository → repository, builtFrom → revision, releasedAs → tag, inRelease → release |
 
 An **artifact** (the CDEvents subject; `Artifact` in the proto) is a product
 of a repository: a binary, a package, an image, known by its content
@@ -290,9 +291,14 @@ of a repository: a binary, a package, an image, known by its content
 the subject's `id`. It is *packaged* when a run produces it and *published*
 when it is available somewhere: a release asset (one event per asset, the
 tag riding along as `releasedAs`), a package or an image in a registry, or
-whatever Secure Publishing moved. CDEvents has no release subject and
-neither does core: the tag groups what a release published. The platform's
-model of artifacts is `docs/artifacts` in the platform repo.
+whatever Secure Publishing moved. CDEvents has no release subject; core
+adds one as a carabiner extension (`Release`, 2026-10-28): a named
+publication cut at a tag, addressed by the tag's name, with the moment it
+is cut as `release.created`, the tag riding along as `releasedAs` and the
+tagged revision as `tagged`. Its artifacts are their own published events,
+each naming the release as `inRelease`, since assets arrive after the
+release is cut. The platform's model of artifacts is `docs/artifacts` in
+the platform repo.
 
 A related subject's `ResourceDescriptor` names the object for humans
 (`name`, `uri`: `repository://github.com/<owner>/<repo>` for a repository)

@@ -126,7 +126,7 @@ func TestArtifactKinds(t *testing.T) {
 		Subject: &Subject{Id: "pkg:github/acme/widgets@v1.0.0#widgets-linux-amd64", Data: &Subject_Artifact{Artifact: &Artifact{Name: "widgets-linux-amd64", Kind: "binary"}}},
 		Related: []*RelatedSubject{
 			{Role: SubjectRole_SUBJECT_ROLE_IN_REPOSITORY, Type: SubjectType_SUBJECT_TYPE_REPOSITORY, Descriptor_: &ResourceDescriptor{Id: widgetsRepoID, Uri: widgetsRepoURI}},
-			{Role: SubjectRole_SUBJECT_ROLE_RELEASED_AS, Type: SubjectType_SUBJECT_TYPE_TAG, Descriptor_: &ResourceDescriptor{Name: "v1.0.0"}},
+			{Role: SubjectRole_SUBJECT_ROLE_RELEASED_AS, Type: SubjectType_SUBJECT_TYPE_TAG, Descriptor_: &ResourceDescriptor{Name: releaseTag}},
 		},
 	}
 	var missing *MissingDigestError
@@ -138,6 +138,57 @@ func TestArtifactKinds(t *testing.T) {
 		t.Errorf("a well-formed artifact.published is refused: %v", err)
 	}
 	if got := event.ObjectRef().Canonical(); got != "artifact:pkg:github/acme/widgets@v1.0.0#widgets-linux-amd64" {
+		t.Errorf("ref = %q", got)
+	}
+}
+
+// releaseTag is the tag the artifact and release tests cut at.
+const releaseTag = "v1.0.0"
+
+func TestReleaseKind(t *testing.T) {
+	created, ok := LookupEventKind(&EventType{Subject: SubjectType_SUBJECT_TYPE_RELEASE, Predicate: Predicate_PREDICATE_CREATED})
+	if !ok {
+		t.Fatal("release.created is not a kind")
+	}
+	// A release relates to its repository, the tag it is cut at and the
+	// revision the tag points to; its artifacts are their own events.
+	for _, s := range []SubjectKind{
+		{Type: SubjectType_SUBJECT_TYPE_RELEASE},
+		{Type: SubjectType_SUBJECT_TYPE_REPOSITORY, Role: SubjectRole_SUBJECT_ROLE_IN_REPOSITORY},
+		{Type: SubjectType_SUBJECT_TYPE_TAG, Role: SubjectRole_SUBJECT_ROLE_RELEASED_AS},
+		{Type: SubjectType_SUBJECT_TYPE_REVISION, Role: SubjectRole_SUBJECT_ROLE_TAGGED},
+	} {
+		if !created.Yields(s) {
+			t.Errorf("release.created does not yield %v", s)
+		}
+	}
+	if created.Yields(SubjectKind{Type: SubjectType_SUBJECT_TYPE_ARTIFACT, Role: SubjectRole_SUBJECT_ROLE_IN_RELEASE}) {
+		t.Error("release.created yields artifacts; they reach the release from their own events")
+	}
+	// A published artifact names the release it was published under.
+	published, _ := LookupEventKind(&EventType{Subject: SubjectType_SUBJECT_TYPE_ARTIFACT, Predicate: Predicate_PREDICATE_PUBLISHED})
+	if !published.Yields(SubjectKind{Type: SubjectType_SUBJECT_TYPE_RELEASE, Role: SubjectRole_SUBJECT_ROLE_IN_RELEASE}) {
+		t.Error("artifact.published does not yield the release")
+	}
+	if got := SubjectTypeName(SubjectType_SUBJECT_TYPE_RELEASE) + "." + PredicateName(Predicate_PREDICATE_CREATED); got != "release.created" {
+		t.Errorf("name = %q", got)
+	}
+	if got := SubjectRoleName(SubjectRole_SUBJECT_ROLE_IN_RELEASE); got != "inRelease" {
+		t.Errorf("role name = %q", got)
+	}
+	// The release is addressed by its tag's name.
+	event := &Event{
+		Type:    created.Type(),
+		Subject: &Subject{Id: releaseTag, Data: &Subject_Release{Release: &Release{Name: "Widgets 1.0", TagName: releaseTag, ExternalId: "4242"}}},
+		Related: []*RelatedSubject{
+			{Role: SubjectRole_SUBJECT_ROLE_IN_REPOSITORY, Type: SubjectType_SUBJECT_TYPE_REPOSITORY, Descriptor_: &ResourceDescriptor{Id: widgetsRepoID, Uri: widgetsRepoURI}},
+			{Role: SubjectRole_SUBJECT_ROLE_RELEASED_AS, Type: SubjectType_SUBJECT_TYPE_TAG, Descriptor_: &ResourceDescriptor{Name: releaseTag}},
+		},
+	}
+	if err := ValidateEvent(event); err != nil {
+		t.Errorf("a well-formed release.created is refused: %v", err)
+	}
+	if got := event.ObjectRef().Canonical(); got != "release:"+releaseTag {
 		t.Errorf("ref = %q", got)
 	}
 }

@@ -56,7 +56,7 @@ func TestCanonicalAndParseRoundTrip(t *testing.T) {
 }
 
 func TestParseObjectRefRejectsGarbage(t *testing.T) {
-	for _, s := range []string{"", "revision", "revision:", ":abc", "release:0.2", "Revision:abc"} {
+	for _, s := range []string{"", "revision", "revision:", ":abc", "comet:0.2", "Revision:abc"} {
 		if _, err := ParseObjectRef(s); err == nil {
 			t.Errorf("ParseObjectRef(%q) accepted", s)
 		}

@@ -110,6 +110,10 @@ message Subject {
 		// artifact is a product of a repository: a binary, a package, an image
 		// (CDEvents artifact). Its id is the artifact's purl.
 		Artifact artifact = 18;
+
+		// release is a named publication of a repository's artifacts cut at a
+		// tag (carabiner extension). Its id is the tag's name.
+		Release release = 19;
 	}
 }
 
@@ -371,6 +375,39 @@ message Artifact {
 	string download_location = 14;
 }
 
+// Release is a named publication of a repository's artifacts cut at a tag: a
+// GitHub release, say. CDEvents has no release subject, an artifact is
+// published and that is the event; the platform adds the release as a
+// carabiner extension in that spirit, so the moment a release is cut is an
+// event of its own, with the tag that names it and the revision the tag
+// points to as related subjects, and the artifacts published under it reach
+// it by the IN_RELEASE role on their own events. The subject's id is the
+// tag's name, which is how a release is addressed everywhere; external_id
+// is the source system's own identifier.
+message Release {
+	// name is the release's title, when it has one apart from the tag.
+	string name = 1;
+
+	// tag_name is the name of the tag the release is cut at, e.g. "v1.2.0".
+	string tag_name = 2;
+
+	// url is the release's web URL in the source system.
+	string url = 3;
+
+	// prerelease reports whether the source system marks it a pre-release.
+	bool prerelease = 4;
+
+	// notes are the release notes, when the source system carries them.
+	string notes = 5;
+
+	// external_id is the release's stable identifier in its source system
+	// (a GitHub release id).
+	string external_id = 10;
+
+	// author is who published it, when known.
+	Actor author = 11;
+}
+
 // RelatedSubject is one node in the origin's neighborhood: a subject reachable
 // from the principal subject, carried as a coordinate-only descriptor so an
 // attester can select it and promote it to an attestation subject. It carries no
@@ -507,6 +544,9 @@ enum SubjectType {
 	// A product of a repository: a binary, a package, an image (CDEvents
 	// artifact).
 	SUBJECT_TYPE_ARTIFACT = 9;
+	// A named publication of artifacts cut at a tag: a release (carabiner
+	// extension).
+	SUBJECT_TYPE_RELEASE = 10;
 }
 
 // Predicate is the lifecycle verb of an event. Which predicates are valid
@@ -637,8 +677,12 @@ enum SubjectRole {
 	// The related subject is the revision the origin (an artifact) was built
 	// from (CDEvents artifact change).
 	SUBJECT_ROLE_BUILT_FROM = 11;
-	// The related subject is the tag that released the origin (an artifact).
+	// The related subject is the tag that released the origin (an artifact,
+	// or the release itself).
 	SUBJECT_ROLE_RELEASED_AS = 12;
+	// The related subject is the release the origin (an artifact) was
+	// published under.
+	SUBJECT_ROLE_IN_RELEASE = 13;
 }
 
 // ChangeState is the lifecycle state of a change (pull/merge request).
