@@ -2386,7 +2386,8 @@ type ResourceDescriptor struct {
 	// uri is the resource's location (e.g. a VCS locator).
 	Uri string `protobuf:"bytes,2,opt,name=uri,proto3" json:"uri,omitempty"`
 	// digest is a set of cryptographic digests keyed by algorithm (e.g.
-	// "gitCommit" -> sha), identifying the resource's content.
+	// "gitCommit" -> a commit sha, "gitTree" -> the tree sha of a commit's
+	// content, "sha256" -> an artifact's), identifying the resource.
 	Digest map[string]string `protobuf:"bytes,3,rep,name=digest,proto3" json:"digest,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// content is the resource's inline content. Left empty for coordinate-only
 	// related subjects.

@@ -494,7 +494,8 @@ message ResourceDescriptor {
 	string uri = 2;
 
 	// digest is a set of cryptographic digests keyed by algorithm (e.g.
-	// "gitCommit" -> sha), identifying the resource's content.
+	// "gitCommit" -> a commit sha, "gitTree" -> the tree sha of a commit's
+	// content, "sha256" -> an artifact's), identifying the resource.
 	map<string, string> digest = 3;
 
 	// content is the resource's inline content. Left empty for coordinate-only

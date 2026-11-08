@@ -13,6 +13,16 @@ import (
 // a git commit sha.
 const DigestGitCommit = "gitCommit"
 
+// DigestGitTree is the digest key under which a resource descriptor carries a
+// git tree sha: the content of a commit, which outlives the commit itself. A
+// merge, a squash or a rebase makes a new commit with the same tree when the
+// branch was up to date, so evidence about content (tests, SBOMs, scans) is
+// anchored on the tree and holds for every commit that carries it, while
+// evidence about the commit object (a signature) stays on gitCommit
+// (platform docs/releases). A tree never identifies a revision: ObjectRef
+// does not resolve one from it.
+const DigestGitTree = "gitTree"
+
 // refSeparator separates the subject type from the id in a canonical
 // reference string.
 const refSeparator = ":"

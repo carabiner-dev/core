@@ -121,3 +121,17 @@ func TestRelatedSubjectObjectRefFallbacks(t *testing.T) {
 		t.Errorf("branch without name = %q, want uri fallback", got)
 	}
 }
+
+// A tree digest identifies content, not a revision: a related revision that
+// carries only a tree resolves to no reference, and one carrying both is
+// still referenced by its commit.
+func TestTreeDigestNamesNoRevision(t *testing.T) {
+	treeOnly := &RelatedSubject{Type: SubjectType_SUBJECT_TYPE_REVISION, Descriptor_: &ResourceDescriptor{Digest: map[string]string{DigestGitTree: "4b825dc642cb6eb9a060e54bf8d69288fbee4904"}}}
+	if ref := treeOnly.ObjectRef(); ref != nil {
+		t.Errorf("tree-only revision resolved to %v, want nothing", ref)
+	}
+	both := &RelatedSubject{Type: SubjectType_SUBJECT_TYPE_REVISION, Descriptor_: &ResourceDescriptor{Digest: map[string]string{DigestGitTree: "4b825dc642cb6eb9a060e54bf8d69288fbee4904", DigestGitCommit: "ABCDEF"}}}
+	if ref := both.ObjectRef(); ref == nil || ref.GetId() != "abcdef" {
+		t.Errorf("revision with a tree and a commit resolved to %v, want the commit", ref)
+	}
+}
