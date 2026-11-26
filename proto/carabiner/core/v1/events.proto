@@ -279,6 +279,12 @@ message Change {
 
 	// state is the change's lifecycle state.
 	ChangeState state = 11;
+
+	// merged_by is the actor that merged the change, set once it is merged.
+	// It is often not the author: a maintainer, or the automation that
+	// merges a change when its requirements are met. CDEvents' change has
+	// no such field; this is a carabiner extension.
+	Actor merged_by = 12;
 }
 
 // Revision is a single source revision (e.g. a git commit). Revisions have no

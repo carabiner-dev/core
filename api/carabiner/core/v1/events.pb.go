@@ -1566,7 +1566,12 @@ type Change struct {
 	// author is the actor that opened the change.
 	Author *Actor `protobuf:"bytes,10,opt,name=author,proto3" json:"author,omitempty"`
 	// state is the change's lifecycle state.
-	State         ChangeState `protobuf:"varint,11,opt,name=state,proto3,enum=carabiner.core.v1.ChangeState" json:"state,omitempty"`
+	State ChangeState `protobuf:"varint,11,opt,name=state,proto3,enum=carabiner.core.v1.ChangeState" json:"state,omitempty"`
+	// merged_by is the actor that merged the change, set once it is merged.
+	// It is often not the author: a maintainer, or the automation that
+	// merges a change when its requirements are met. CDEvents' change has
+	// no such field; this is a carabiner extension.
+	MergedBy      *Actor `protobuf:"bytes,12,opt,name=merged_by,json=mergedBy,proto3" json:"merged_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1648,6 +1653,13 @@ func (x *Change) GetState() ChangeState {
 		return x.State
 	}
 	return ChangeState_CHANGE_STATE_UNSPECIFIED
+}
+
+func (x *Change) GetMergedBy() *Actor {
+	if x != nil {
+		return x.MergedBy
+	}
+	return nil
 }
 
 // Revision is a single source revision (e.g. a git commit). Revisions have no
@@ -2587,7 +2599,7 @@ const file_carabiner_core_v1_events_proto_rawDesc = "" +
 	"\a_number\".\n" +
 	"\x06Branch\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n" +
-	"\x03ref\x18\x02 \x01(\tR\x03ref\"\x83\x02\n" +
+	"\x03ref\x18\x02 \x01(\tR\x03ref\"\xba\x02\n" +
 	"\x06Change\x12\x1f\n" +
 	"\vexternal_id\x18\x01 \x01(\tR\n" +
 	"externalId\x12\x1b\n" +
@@ -2597,7 +2609,8 @@ const file_carabiner_core_v1_events_proto_rawDesc = "" +
 	"\x03url\x18\x05 \x01(\tR\x03url\x120\n" +
 	"\x06author\x18\n" +
 	" \x01(\v2\x18.carabiner.core.v1.ActorR\x06author\x124\n" +
-	"\x05state\x18\v \x01(\x0e2\x1e.carabiner.core.v1.ChangeStateR\x05stateB\t\n" +
+	"\x05state\x18\v \x01(\x0e2\x1e.carabiner.core.v1.ChangeStateR\x05state\x125\n" +
+	"\tmerged_by\x18\f \x01(\v2\x18.carabiner.core.v1.ActorR\bmergedByB\t\n" +
 	"\a_number\"\xc9\x02\n" +
 	"\bRevision\x12\x10\n" +
 	"\x03sha\x18\x01 \x01(\tR\x03sha\x12\x18\n" +
@@ -2843,26 +2856,27 @@ var file_carabiner_core_v1_events_proto_depIdxs = []int32{
 	22, // 36: carabiner.core.v1.StepRun.step:type_name -> carabiner.core.v1.Reference
 	23, // 37: carabiner.core.v1.Change.author:type_name -> carabiner.core.v1.Actor
 	7,  // 38: carabiner.core.v1.Change.state:type_name -> carabiner.core.v1.ChangeState
-	23, // 39: carabiner.core.v1.Revision.author:type_name -> carabiner.core.v1.Actor
-	23, // 40: carabiner.core.v1.Revision.committer:type_name -> carabiner.core.v1.Actor
-	28, // 41: carabiner.core.v1.Revision.authored_at:type_name -> google.protobuf.Timestamp
-	28, // 42: carabiner.core.v1.Revision.committed_at:type_name -> google.protobuf.Timestamp
-	23, // 43: carabiner.core.v1.Tag.tagger:type_name -> carabiner.core.v1.Actor
-	26, // 44: carabiner.core.v1.Artifact.digest:type_name -> carabiner.core.v1.Artifact.DigestEntry
-	23, // 45: carabiner.core.v1.Release.author:type_name -> carabiner.core.v1.Actor
-	6,  // 46: carabiner.core.v1.RelatedSubject.role:type_name -> carabiner.core.v1.SubjectRole
-	0,  // 47: carabiner.core.v1.RelatedSubject.type:type_name -> carabiner.core.v1.SubjectType
-	24, // 48: carabiner.core.v1.RelatedSubject.descriptor:type_name -> carabiner.core.v1.ResourceDescriptor
-	0,  // 49: carabiner.core.v1.ObjectRef.type:type_name -> carabiner.core.v1.SubjectType
-	5,  // 50: carabiner.core.v1.Actor.type:type_name -> carabiner.core.v1.ActorType
-	27, // 51: carabiner.core.v1.ResourceDescriptor.digest:type_name -> carabiner.core.v1.ResourceDescriptor.DigestEntry
-	30, // 52: carabiner.core.v1.ResourceDescriptor.annotations:type_name -> google.protobuf.Struct
-	30, // 53: carabiner.core.v1.Event.SystemDataEntry.value:type_name -> google.protobuf.Struct
-	54, // [54:54] is the sub-list for method output_type
-	54, // [54:54] is the sub-list for method input_type
-	54, // [54:54] is the sub-list for extension type_name
-	54, // [54:54] is the sub-list for extension extendee
-	0,  // [0:54] is the sub-list for field type_name
+	23, // 39: carabiner.core.v1.Change.merged_by:type_name -> carabiner.core.v1.Actor
+	23, // 40: carabiner.core.v1.Revision.author:type_name -> carabiner.core.v1.Actor
+	23, // 41: carabiner.core.v1.Revision.committer:type_name -> carabiner.core.v1.Actor
+	28, // 42: carabiner.core.v1.Revision.authored_at:type_name -> google.protobuf.Timestamp
+	28, // 43: carabiner.core.v1.Revision.committed_at:type_name -> google.protobuf.Timestamp
+	23, // 44: carabiner.core.v1.Tag.tagger:type_name -> carabiner.core.v1.Actor
+	26, // 45: carabiner.core.v1.Artifact.digest:type_name -> carabiner.core.v1.Artifact.DigestEntry
+	23, // 46: carabiner.core.v1.Release.author:type_name -> carabiner.core.v1.Actor
+	6,  // 47: carabiner.core.v1.RelatedSubject.role:type_name -> carabiner.core.v1.SubjectRole
+	0,  // 48: carabiner.core.v1.RelatedSubject.type:type_name -> carabiner.core.v1.SubjectType
+	24, // 49: carabiner.core.v1.RelatedSubject.descriptor:type_name -> carabiner.core.v1.ResourceDescriptor
+	0,  // 50: carabiner.core.v1.ObjectRef.type:type_name -> carabiner.core.v1.SubjectType
+	5,  // 51: carabiner.core.v1.Actor.type:type_name -> carabiner.core.v1.ActorType
+	27, // 52: carabiner.core.v1.ResourceDescriptor.digest:type_name -> carabiner.core.v1.ResourceDescriptor.DigestEntry
+	30, // 53: carabiner.core.v1.ResourceDescriptor.annotations:type_name -> google.protobuf.Struct
+	30, // 54: carabiner.core.v1.Event.SystemDataEntry.value:type_name -> google.protobuf.Struct
+	55, // [55:55] is the sub-list for method output_type
+	55, // [55:55] is the sub-list for method input_type
+	55, // [55:55] is the sub-list for extension type_name
+	55, // [55:55] is the sub-list for extension extendee
+	0,  // [0:55] is the sub-list for field type_name
 }
 
 func init() { file_carabiner_core_v1_events_proto_init() }
