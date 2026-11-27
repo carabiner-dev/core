@@ -35,13 +35,15 @@ const (
 	// single-repository project is a root without an edge.
 	MemberRole_MEMBER_ROLE_ROOT MemberRole = 1
 	// A root reaches it through dependency edges (dependsOn,
-	// hasOptionalDependency), transitively.
+	// hasOptionalDependency), transitively. In a project with no root (a
+	// group), another member points at it with a dependency edge.
 	MemberRole_MEMBER_ROLE_DEPENDENCY MemberRole = 2
 	// A root reaches it by any other edge type: tests, documentation,
-	// configuration, packaging, tooling, variants.
+	// configuration, packaging, tooling, variants. In a project with no
+	// root, other members point at it with such edges alone.
 	MemberRole_MEMBER_ROLE_SUPPORTING MemberRole = 3
-	// No root reaches it and it reaches no root. Every member of a group
-	// project is one.
+	// No root reaches it and it reaches no root. In a project with no root,
+	// no other member points at it.
 	MemberRole_MEMBER_ROLE_UNRELATED MemberRole = 4
 	// It reaches a root through dependency edges: a consumer of a
 	// deliverable, such as a CLI built on the main repository.
@@ -272,7 +274,8 @@ type MemberSelector struct {
 	// types (a subset of SPDX 3's vocabulary). Roots and unrelated members
 	// are reached by none. In a project with no root (a group) it admits
 	// the members another member points at with an edge of one of these
-	// types: "dependsOn" selects what some member depends on.
+	// types: "dependsOn" selects what some member depends on, as the
+	// dependency role does there.
 	RelationshipTypes []string `protobuf:"bytes,2,rep,name=relationship_types,json=relationshipTypes,proto3" json:"relationship_types,omitempty"`
 	// folder_path_prefix admits members placed in this folder or below it:
 	// "/build" reaches /build and /build/ci. "/" reaches every member.

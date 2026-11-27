@@ -18,7 +18,8 @@ type Edge struct {
 // MemberPosition is a member's derived place in the graph: its role and the
 // relationship types by which it is reached. In a project with a root that
 // is how a root reaches it (empty for a root, a dependent and an unrelated
-// member); in one with no root, how any other member does.
+// member); in one with no root, how any other member does, which also gives
+// it its role.
 type MemberPosition struct {
 	Role      MemberRole
 	ReachedBy []string
@@ -38,10 +39,13 @@ type MemberPosition struct {
 //   - dependent: it reaches a root through dependency edges, transitively;
 //   - unrelated: none of the above.
 //
-// A project with no root (a group) has nothing to measure a role from, so
-// every member of it is unrelated. Its edges still say something: there a
-// member is reached by the types of the edges other members point at it
-// with, so "reached by dependsOn" selects what some member depends on.
+// A project with no root (a group) has no deliverable to measure from, so
+// there every member counts as where an edge may start: a member is a
+// dependency when another member points at it with a dependency edge,
+// supporting when members only point at it with other types, and unrelated
+// when none points at it. It is reached by the types of those edges, so
+// "reached by dependsOn" and the dependency role select what some member
+// depends on. No member of such a project is a root or a dependent.
 //
 // The result has an entry for every member key.
 func DeriveMemberRoles(memberKeys []string, edges []Edge, implicitRoots []string) map[string]MemberPosition {
@@ -53,9 +57,8 @@ func DeriveMemberRoles(memberKeys []string, edges []Edge, implicitRoots []string
 	}
 
 	// Adjacency among members, by edge type, forward and backward.
-	type link struct{ to, typ string }
-	forward := map[string][]link{}
-	backward := map[string][]link{}
+	forward := map[string][]memberLink{}
+	backward := map[string][]memberLink{}
 	roots := map[string]bool{}
 	for _, key := range implicitRoots {
 		if members[key] {
@@ -80,8 +83,8 @@ func DeriveMemberRoles(memberKeys []string, edges []Edge, implicitRoots []string
 		if !members[from] {
 			continue
 		}
-		forward[from] = append(forward[from], link{to, e.Type})
-		backward[to] = append(backward[to], link{from, e.Type})
+		forward[from] = append(forward[from], memberLink{to, e.Type})
+		backward[to] = append(backward[to], memberLink{from, e.Type})
 	}
 
 	positions := make(map[string]MemberPosition, len(members))
@@ -94,7 +97,7 @@ func DeriveMemberRoles(memberKeys []string, edges []Edge, implicitRoots []string
 
 	// walk visits what start reaches over the links admitted by follow,
 	// never entering roots, and calls visit on each new node.
-	walk := func(adjacent map[string][]link, start map[string]bool, follow func(string) bool, visit func(string)) map[string]bool {
+	walk := func(adjacent map[string][]memberLink, start map[string]bool, follow func(string) bool, visit func(string)) map[string]bool {
 		seen := map[string]bool{}
 		queue := make([]string, 0, len(start))
 		for key := range start {
@@ -163,26 +166,44 @@ func DeriveMemberRoles(memberKeys []string, edges []Edge, implicitRoots []string
 		positions[key] = pos
 	}
 
-	// No root: nothing above reached anything. A member is then reached by
-	// the edges other members point at it with, whatever their type.
+	// No root: nothing above reached anything, and the members take their
+	// positions from the edges among them.
 	if len(roots) == 0 {
-		for key := range members {
-			var types []string
-			for _, l := range backward[key] {
-				// In the backward adjacency a link's end is where the edge
-				// comes from; an edge from a member to itself reaches no one.
-				if l.to != key {
-					types = append(types, l.typ)
-				}
-			}
-			if len(types) == 0 {
-				continue
-			}
-			slices.Sort(types)
-			pos := positions[key]
-			pos.ReachedBy = slices.Compact(types)
-			positions[key] = pos
-		}
+		positionRootless(positions, backward)
 	}
 	return positions
+}
+
+// memberLink is one end of an edge between two members in an adjacency
+// list: the member at the other end and the edge's type.
+type memberLink struct{ to, typ string }
+
+// positionRootless gives the members of a project with no root their
+// positions. Every member is where an edge may start: a member is reached
+// by the edges other members point at it with, a dependency when one of
+// them is a dependency edge and supporting otherwise. One no member points
+// at keeps the position it has, unrelated. backward lists, per member, the
+// edges that arrive at it: a link's end is where the edge comes from.
+func positionRootless(positions map[string]MemberPosition, backward map[string][]memberLink) {
+	for key := range positions {
+		var types []string
+		dependency := false
+		for _, l := range backward[key] {
+			// An edge from a member to itself reaches no one.
+			if l.to == key {
+				continue
+			}
+			types = append(types, l.typ)
+			dependency = dependency || IsDependencyRelationshipType(l.typ)
+		}
+		if len(types) == 0 {
+			continue
+		}
+		slices.Sort(types)
+		role := MemberRole_MEMBER_ROLE_SUPPORTING
+		if dependency {
+			role = MemberRole_MEMBER_ROLE_DEPENDENCY
+		}
+		positions[key] = MemberPosition{Role: role, ReachedBy: slices.Compact(types)}
+	}
 }

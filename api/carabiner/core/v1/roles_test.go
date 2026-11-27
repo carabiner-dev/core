@@ -116,30 +116,26 @@ func TestDeriveMemberRolesRootsAndCycles(t *testing.T) {
 		t.Error("the root stays a root inside a cycle")
 	}
 
-	// No roots: every member is unrelated, whatever the edges.
+	// No roots: nothing is measured from a deliverable, so any member is
+	// where an edge may start. b is what a depends on; nothing points at a.
 	none := DeriveMemberRoles([]string{keyA, keyB}, []Edge{
 		edge(repoRef("a"), repoRef("b"), RelationshipDependsOn),
 	}, nil)
-	for key, pos := range none {
-		if pos.Role != MemberRole_MEMBER_ROLE_UNRELATED {
-			t.Errorf("%s = %v, want unrelated", key, pos.Role)
-		}
+	if pos := none[keyB]; pos.Role != MemberRole_MEMBER_ROLE_DEPENDENCY || !slices.Equal(pos.ReachedBy, []string{RelationshipDependsOn}) {
+		t.Errorf("b = %v, want a dependency reached by dependsOn", pos)
 	}
-	// The edge is still there to select by: b is what a depends on.
-	if got := none[keyB].ReachedBy; !slices.Equal(got, []string{RelationshipDependsOn}) {
-		t.Errorf("b reached by %v, want dependsOn", got)
-	}
-	if got := none[keyA].ReachedBy; len(got) != 0 {
-		t.Errorf("a reached by %v, want nothing: no member points at it", got)
+	if pos := none[keyA]; pos.Role != MemberRole_MEMBER_ROLE_UNRELATED || len(pos.ReachedBy) != 0 {
+		t.Errorf("a = %v, want unrelated and reached by nothing: no member points at it", pos)
 	}
 	if len(DeriveMemberRoles(nil, nil, nil)) != 0 {
 		t.Error("no members, no positions")
 	}
 }
 
-// A group has no root, so no member has a role; its members are reached by
-// the edges among them. A selector on a relationship type then picks what
-// some member relates to that way.
+// A group has no root, so its members take their role from the edges among
+// them: a dependency is what some member depends on, a supporting member
+// what members only point at otherwise. A selector on a role or on a
+// relationship type then picks them.
 func TestDeriveMemberRolesWithoutRoots(t *testing.T) {
 	const keyTests = "repository:tests"
 	group := DeriveMemberRoles([]string{keyA, keyB, keyLib, keyTests, keyCLI}, []Edge{
@@ -156,39 +152,58 @@ func TestDeriveMemberRolesWithoutRoots(t *testing.T) {
 		edge(repoRef("elsewhere"), repoRef(memberCLI), RelationshipDependsOn),
 	}, nil)
 
-	want := map[string][]string{
-		keyA:     nil,
-		keyB:     {RelationshipDependsOn},
-		keyLib:   {RelationshipDependsOn, RelationshipHasOptionalDependency},
-		keyTests: {RelationshipHasTest},
-		keyCLI:   nil,
+	want := map[string]MemberPosition{
+		// Nothing points at a, which only points at others: it is no
+		// dependent either, with no deliverable to depend on.
+		keyA:     {Role: MemberRole_MEMBER_ROLE_UNRELATED},
+		keyB:     {Role: MemberRole_MEMBER_ROLE_DEPENDENCY, ReachedBy: []string{RelationshipDependsOn}},
+		keyLib:   {Role: MemberRole_MEMBER_ROLE_DEPENDENCY, ReachedBy: []string{RelationshipDependsOn, RelationshipHasOptionalDependency}},
+		keyTests: {Role: MemberRole_MEMBER_ROLE_SUPPORTING, ReachedBy: []string{RelationshipHasTest}},
+		keyCLI:   {Role: MemberRole_MEMBER_ROLE_UNRELATED},
 	}
-	for key, types := range want {
+	for key, w := range want {
 		pos := group[key]
-		if pos.Role != MemberRole_MEMBER_ROLE_UNRELATED {
-			t.Errorf("%s role = %v, want unrelated: a group has no roles", key, pos.Role)
-		}
-		if !slices.Equal(pos.ReachedBy, types) {
-			t.Errorf("%s reached by %v, want %v", key, pos.ReachedBy, types)
+		if pos.Role != w.Role || !slices.Equal(pos.ReachedBy, w.ReachedBy) {
+			t.Errorf("%s = %v reached by %v, want %v reached by %v", key, pos.Role, pos.ReachedBy, w.Role, w.ReachedBy)
 		}
 	}
 
-	// What it means for a selector: by relationship it picks members, by
-	// role it still picks none.
-	byDependsOn := &MemberSelector{RelationshipTypes: []string{RelationshipDependsOn}}
-	dependencies := &MemberSelector{Roles: []MemberRole{MemberRole_MEMBER_ROLE_DEPENDENCY}}
-	var picked []string
-	for _, key := range []string{keyA, keyB, keyLib, keyTests, keyCLI} {
-		m := &Member{Role: group[key].Role, ReachedBy: group[key].ReachedBy}
-		if byDependsOn.Matches(m) {
-			picked = append(picked, key)
-		}
-		if dependencies.Matches(m) {
-			t.Errorf("%s matched the dependency role in a group", key)
-		}
+	// A member pointed at with both a dependency edge and another is a
+	// dependency: the dependency wins, as it does with a root.
+	both := DeriveMemberRoles([]string{keyA, keyB}, []Edge{
+		edge(repoRef("a"), repoRef("b"), RelationshipHasTest),
+		edge(repoRef("a"), repoRef("b"), RelationshipDependsOn),
+	}, nil)
+	if pos := both[keyB]; pos.Role != MemberRole_MEMBER_ROLE_DEPENDENCY || !slices.Equal(pos.ReachedBy, []string{RelationshipDependsOn, RelationshipHasTest}) {
+		t.Errorf("b = %v, want a dependency reached by both", pos)
 	}
-	if !slices.Equal(picked, []string{keyB, keyLib}) {
-		t.Errorf("reached by dependsOn = %v, want b and lib", picked)
+
+	// What it means for a selector: the dependency role and "reached by
+	// dependsOn" pick the same members, and the supporting role the rest
+	// that something points at.
+	keys := []string{keyA, keyB, keyLib, keyTests, keyCLI}
+	pick := func(sel *MemberSelector) []string {
+		var out []string
+		for _, key := range keys {
+			if sel.Matches(&Member{Role: group[key].Role, ReachedBy: group[key].ReachedBy}) {
+				out = append(out, key)
+			}
+		}
+		return out
+	}
+	if got := pick(&MemberSelector{RelationshipTypes: []string{RelationshipDependsOn}}); !slices.Equal(got, []string{keyB, keyLib}) {
+		t.Errorf("reached by dependsOn = %v, want b and lib", got)
+	}
+	if got := pick(&MemberSelector{Roles: []MemberRole{MemberRole_MEMBER_ROLE_DEPENDENCY}}); !slices.Equal(got, []string{keyB, keyLib}) {
+		t.Errorf("dependencies = %v, want b and lib", got)
+	}
+	if got := pick(&MemberSelector{Roles: []MemberRole{MemberRole_MEMBER_ROLE_SUPPORTING}}); !slices.Equal(got, []string{keyTests}) {
+		t.Errorf("supporting = %v, want tests", got)
+	}
+	for _, role := range []MemberRole{MemberRole_MEMBER_ROLE_ROOT, MemberRole_MEMBER_ROLE_DEPENDENT} {
+		if got := pick(&MemberSelector{Roles: []MemberRole{role}}); len(got) != 0 {
+			t.Errorf("%v in a group = %v, want none: there is no deliverable", role, got)
+		}
 	}
 
 	// With a root the rule is the old one: a member no root reaches is

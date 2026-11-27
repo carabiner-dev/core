@@ -44,13 +44,15 @@ enum MemberRole {
 	// single-repository project is a root without an edge.
 	MEMBER_ROLE_ROOT = 1;
 	// A root reaches it through dependency edges (dependsOn,
-	// hasOptionalDependency), transitively.
+	// hasOptionalDependency), transitively. In a project with no root (a
+	// group), another member points at it with a dependency edge.
 	MEMBER_ROLE_DEPENDENCY = 2;
 	// A root reaches it by any other edge type: tests, documentation,
-	// configuration, packaging, tooling, variants.
+	// configuration, packaging, tooling, variants. In a project with no
+	// root, other members point at it with such edges alone.
 	MEMBER_ROLE_SUPPORTING = 3;
-	// No root reaches it and it reaches no root. Every member of a group
-	// project is one.
+	// No root reaches it and it reaches no root. In a project with no root,
+	// no other member points at it.
 	MEMBER_ROLE_UNRELATED = 4;
 	// It reaches a root through dependency edges: a consumer of a
 	// deliverable, such as a CLI built on the main repository.
@@ -83,7 +85,8 @@ message MemberSelector {
 	// types (a subset of SPDX 3's vocabulary). Roots and unrelated members
 	// are reached by none. In a project with no root (a group) it admits
 	// the members another member points at with an edge of one of these
-	// types: "dependsOn" selects what some member depends on.
+	// types: "dependsOn" selects what some member depends on, as the
+	// dependency role does there.
 	repeated string relationship_types = 2;
 
 	// folder_path_prefix admits members placed in this folder or below it:
