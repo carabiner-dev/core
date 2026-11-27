@@ -191,7 +191,8 @@ project, or the sole member of a single-repository project), **dependency**
 deliverable), **unrelated** (none of those). A root is a root whatever else
 holds. A `MemberSelector` admits the
 members every set field allows: `roles`, `relationship_types` (reached by one
-of these), `folder_path_prefix` (`/build` reaches `/build` and below, `/`
+of these: by a root, or in a project with no root, where every member is
+unrelated, by any other member), `folder_path_prefix` (`/build` reaches `/build` and below, `/`
 everything), `kinds` (repository, codebase) and `labels` (a `LabelSelector`
 over effective labels). One with no field set is invalid and matches
 nothing. `Validate` and `Matches(*Member)` are the Go helpers; `Member` is what

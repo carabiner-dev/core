@@ -270,7 +270,9 @@ type MemberSelector struct {
 	Roles []MemberRole `protobuf:"varint,1,rep,packed,name=roles,proto3,enum=carabiner.core.v1.MemberRole" json:"roles,omitempty"`
 	// relationship_types admits members a root reaches by one of these edge
 	// types (a subset of SPDX 3's vocabulary). Roots and unrelated members
-	// are reached by none.
+	// are reached by none. In a project with no root (a group) it admits
+	// the members another member points at with an edge of one of these
+	// types: "dependsOn" selects what some member depends on.
 	RelationshipTypes []string `protobuf:"bytes,2,rep,name=relationship_types,json=relationshipTypes,proto3" json:"relationship_types,omitempty"`
 	// folder_path_prefix admits members placed in this folder or below it:
 	// "/build" reaches /build and /build/ci. "/" reaches every member.

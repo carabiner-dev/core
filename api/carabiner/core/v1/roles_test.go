@@ -125,7 +125,79 @@ func TestDeriveMemberRolesRootsAndCycles(t *testing.T) {
 			t.Errorf("%s = %v, want unrelated", key, pos.Role)
 		}
 	}
+	// The edge is still there to select by: b is what a depends on.
+	if got := none[keyB].ReachedBy; !slices.Equal(got, []string{RelationshipDependsOn}) {
+		t.Errorf("b reached by %v, want dependsOn", got)
+	}
+	if got := none[keyA].ReachedBy; len(got) != 0 {
+		t.Errorf("a reached by %v, want nothing: no member points at it", got)
+	}
 	if len(DeriveMemberRoles(nil, nil, nil)) != 0 {
 		t.Error("no members, no positions")
+	}
+}
+
+// A group has no root, so no member has a role; its members are reached by
+// the edges among them. A selector on a relationship type then picks what
+// some member relates to that way.
+func TestDeriveMemberRolesWithoutRoots(t *testing.T) {
+	const keyTests = "repository:tests"
+	group := DeriveMemberRoles([]string{keyA, keyB, keyLib, keyTests, keyCLI}, []Edge{
+		// a and b both depend on lib; a also depends on b.
+		edge(repoRef("a"), repoRef("lib"), RelationshipDependsOn),
+		edge(repoRef("b"), repoRef("lib"), RelationshipDependsOn),
+		edge(repoRef("a"), repoRef("b"), RelationshipDependsOn),
+		// lib is also an optional dependency of b, and tests test a.
+		edge(repoRef("b"), repoRef("lib"), RelationshipHasOptionalDependency),
+		edge(repoRef("a"), repoRef("tests"), RelationshipHasTest),
+		// An edge from a member to itself reaches no one, and one from
+		// outside the project is ignored.
+		edge(repoRef(memberCLI), repoRef(memberCLI), RelationshipDependsOn),
+		edge(repoRef("elsewhere"), repoRef(memberCLI), RelationshipDependsOn),
+	}, nil)
+
+	want := map[string][]string{
+		keyA:     nil,
+		keyB:     {RelationshipDependsOn},
+		keyLib:   {RelationshipDependsOn, RelationshipHasOptionalDependency},
+		keyTests: {RelationshipHasTest},
+		keyCLI:   nil,
+	}
+	for key, types := range want {
+		pos := group[key]
+		if pos.Role != MemberRole_MEMBER_ROLE_UNRELATED {
+			t.Errorf("%s role = %v, want unrelated: a group has no roles", key, pos.Role)
+		}
+		if !slices.Equal(pos.ReachedBy, types) {
+			t.Errorf("%s reached by %v, want %v", key, pos.ReachedBy, types)
+		}
+	}
+
+	// What it means for a selector: by relationship it picks members, by
+	// role it still picks none.
+	byDependsOn := &MemberSelector{RelationshipTypes: []string{RelationshipDependsOn}}
+	dependencies := &MemberSelector{Roles: []MemberRole{MemberRole_MEMBER_ROLE_DEPENDENCY}}
+	var picked []string
+	for _, key := range []string{keyA, keyB, keyLib, keyTests, keyCLI} {
+		m := &Member{Role: group[key].Role, ReachedBy: group[key].ReachedBy}
+		if byDependsOn.Matches(m) {
+			picked = append(picked, key)
+		}
+		if dependencies.Matches(m) {
+			t.Errorf("%s matched the dependency role in a group", key)
+		}
+	}
+	if !slices.Equal(picked, []string{keyB, keyLib}) {
+		t.Errorf("reached by dependsOn = %v, want b and lib", picked)
+	}
+
+	// With a root the rule is the old one: a member no root reaches is
+	// reached by nothing, whatever other members point at it.
+	rooted := DeriveMemberRoles([]string{keyMain, keyA, keyB}, []Edge{
+		edge(projectRef(), repoRef(memberMain), RelationshipDescribes),
+		edge(repoRef("a"), repoRef("b"), RelationshipDependsOn),
+	}, nil)
+	if pos := rooted[keyB]; pos.Role != MemberRole_MEMBER_ROLE_UNRELATED || len(pos.ReachedBy) != 0 {
+		t.Errorf("b in a rooted project = %v, want unrelated and reached by nothing", pos)
 	}
 }

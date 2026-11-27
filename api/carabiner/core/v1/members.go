@@ -117,8 +117,9 @@ type Member struct {
 	// Role is the member's place in the graph.
 	Role MemberRole
 	// ReachedBy are the relationship types by which a root reaches the
-	// member, directly or through other members. Empty for a root and for
-	// an unrelated member.
+	// member, directly or through other members: empty for a root and for
+	// an unrelated member. In a project with no root, the types of the
+	// edges other members point at it with.
 	ReachedBy []string
 	// FolderPath is the path of the folder the member is placed in, "/" for
 	// the root folder.

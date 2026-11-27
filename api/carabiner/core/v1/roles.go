@@ -16,8 +16,9 @@ type Edge struct {
 }
 
 // MemberPosition is a member's derived place in the graph: its role and the
-// relationship types by which a root reaches it (empty for a root, a
-// dependent and an unrelated member).
+// relationship types by which it is reached. In a project with a root that
+// is how a root reaches it (empty for a root, a dependent and an unrelated
+// member); in one with no root, how any other member does.
 type MemberPosition struct {
 	Role      MemberRole
 	ReachedBy []string
@@ -36,6 +37,11 @@ type MemberPosition struct {
 //     edge type (a test, documentation, configuration, tooling, a variant);
 //   - dependent: it reaches a root through dependency edges, transitively;
 //   - unrelated: none of the above.
+//
+// A project with no root (a group) has nothing to measure a role from, so
+// every member of it is unrelated. Its edges still say something: there a
+// member is reached by the types of the edges other members point at it
+// with, so "reached by dependsOn" selects what some member depends on.
 //
 // The result has an entry for every member key.
 func DeriveMemberRoles(memberKeys []string, edges []Edge, implicitRoots []string) map[string]MemberPosition {
@@ -155,6 +161,28 @@ func DeriveMemberRoles(memberKeys []string, edges []Edge, implicitRoots []string
 		pos := positions[key]
 		pos.ReachedBy = slices.Compact(types)
 		positions[key] = pos
+	}
+
+	// No root: nothing above reached anything. A member is then reached by
+	// the edges other members point at it with, whatever their type.
+	if len(roots) == 0 {
+		for key := range members {
+			var types []string
+			for _, l := range backward[key] {
+				// In the backward adjacency a link's end is where the edge
+				// comes from; an edge from a member to itself reaches no one.
+				if l.to != key {
+					types = append(types, l.typ)
+				}
+			}
+			if len(types) == 0 {
+				continue
+			}
+			slices.Sort(types)
+			pos := positions[key]
+			pos.ReachedBy = slices.Compact(types)
+			positions[key] = pos
+		}
 	}
 	return positions
 }
